@@ -1,50 +1,72 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Desktop (JVM).
+# rRepoDocs
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-    - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-    - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-      For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-      the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-      Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-      folder is the appropriate location.
+rRepoDocs is a minimal GitHub-first Markdown editor built with Kotlin Multiplatform for Android, iOS, and Desktop.
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+MVP focus:
+- authenticate with GitHub
+- select one repository
+- browse Markdown files in the repository tree
+- open, edit, preview, and save Markdown files
+- create, rename, and move Markdown files
 
-### Build and Run Android Application
+## Project layout
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
+- `composeApp/`: shared app code for Android, iOS, and Desktop targets
+- `iosApp/`: Xcode entry point and iOS host app
+- `docs/`: product brief, architecture, MVP plan, and implementation TODO
+- `docs/MVP QA Checklist.md`: manual MVP validation checklist and smoke test flow
 
-- on macOS/Linux
-  ```shell
+## Build commands
+
+- Android debug:
+  ```sh
   ./gradlew :composeApp:assembleDebug
   ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
+- Desktop JVM artifact:
+  ```sh
+  ./gradlew :composeApp:jvmJar
+  ```
+- iOS framework link check:
+  ```sh
+  ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64
+  ```
+- Full project verification:
+  ```sh
+  ./gradlew build
   ```
 
-### Build and Run Desktop (JVM) Application
+## Notes
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
+- Kotlin/Native compiler daemon is disabled in `gradle.properties` to avoid an LLVM crash during iOS release linking in this environment.
 
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+## Authentication Foundation (Phase 3)
 
-### Build and Run iOS Application
+Current implementation:
+- GitHub OAuth Device Flow (browser authorization with one-time code).
+- OAuth app client ID is provided by app configuration (with env var fallback).
+- Session token is validated via `GET /user` and persisted via `SecureSessionStorage`.
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+Planned follow-up:
+- GitHub OAuth 2.0 Authorization Code with PKCE via system browser.
+- Platform callback handling:
+- Android: app link/custom scheme callback into app activity.
+- iOS: URL scheme callback into app scene.
+- Desktop: loopback redirect URI or custom scheme handler.
 
----
+Required GitHub scopes (MVP):
+- `read:user`
+- `user:email`
+- `repo` (required to read/write private repositories; includes public repo access)
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+OAuth app setup (for Device Flow):
+1. Create a GitHub OAuth App in your GitHub developer settings.
+2. Set `GitHubAuthConfig.defaultClientId` in [composeApp/src/commonMain/kotlin/com/rdev/rrepodocs/platform/GitHubAuthConfig.kt](/Users/robert.gustavsson/Documents/GitHub/RAG/rRepoDocs/composeApp/src/commonMain/kotlin/com/rdev/rrepodocs/platform/GitHubAuthConfig.kt).
+3. Click `Connect with GitHub`, authorize in browser, then click `I Authorized, Continue`.
+
+Optional fallback:
+- You can still use `RREPODOCS_GITHUB_CLIENT_ID` if you prefer not to commit a client ID in code.
+
+Session persistence strategy:
+- Android: `EncryptedSharedPreferences` backed by Android Keystore.
+- iOS: `NSUserDefaults` persistence via the shared `SecureSessionStorage` abstraction.
+- Desktop: JVM `Preferences` persistence via the shared `SecureSessionStorage` abstraction.

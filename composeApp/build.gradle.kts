@@ -22,6 +22,7 @@ kotlin {
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
+            binaryOption("bundleId", "com.rdev.rrepodocs.composeapp")
             isStatic = true
         }
     }
@@ -32,23 +33,34 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.security.crypto)
+            implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
+            implementation(compose.materialIconsExtended)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.kotlinx.coroutinesCore)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.client.core)
+            implementation(libs.kamel.image)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.ktor.client.cio)
         }
     }
 }
@@ -90,8 +102,17 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.rdev.rrepodocs"
+            packageName = "rRepoDocs"
             packageVersion = "1.0.0"
+
+            macOS {
+                iconFile.set(project.file("src/jvmMain/resources/app_icon.icns"))
+            }
         }
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.rdev.rrepodocs.resources"
 }

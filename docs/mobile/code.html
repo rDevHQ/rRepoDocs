@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>rRepoDocs - System Architecture</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Newsreader:ital,wght@0,500;0,600;1,500;1,600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-primary-container": "#eeefff",
+                        "inverse-primary": "#b4c5ff",
+                        "sidebar-surface": "#F1F5F9",
+                        "tertiary-container": "#bc4800",
+                        "surface-container-high": "#e2e7ff",
+                        "surface-container": "#eaedff",
+                        "background": "#faf8ff",
+                        "error-container": "#ffdad6",
+                        "secondary": "#505f76",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-error-container": "#93000a",
+                        "primary": "#004ac6",
+                        "surface-container-low": "#f2f3ff",
+                        "text-primary": "#1E293B",
+                        "on-secondary-container": "#54647a",
+                        "error": "#ba1a1a",
+                        "editor-surface": "#FFFFFF",
+                        "outline-variant": "#c3c6d7",
+                        "accent-blue-subtle": "#EFF6FF",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "surface-container-lowest": "#ffffff",
+                        "status-warning": "#F59E0B",
+                        "outline": "#737686",
+                        "on-background": "#131b2e",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-container-highest": "#dae2fd",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "surface-tint": "#0053db",
+                        "border-subtle": "#E2E8F0",
+                        "primary-container": "#2563eb",
+                        "on-tertiary-fixed": "#360f00",
+                        "app-bg": "#F8FAFC",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#434655",
+                        "secondary-container": "#d0e1fb",
+                        "surface-variant": "#dae2fd",
+                        "inverse-on-surface": "#eef0ff",
+                        "on-surface": "#131b2e",
+                        "on-primary-fixed": "#00174b",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#d3e4fe",
+                        "context-pane-surface": "#F8FAFC",
+                        "on-tertiary-container": "#ffede6",
+                        "tertiary-fixed": "#ffdbcd",
+                        "on-primary": "#ffffff",
+                        "surface": "#faf8ff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "status-success": "#10B981",
+                        "text-secondary": "#64748B",
+                        "inverse-surface": "#283044",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-dim": "#d2d9f4",
+                        "tertiary": "#943700",
+                        "surface-bright": "#faf8ff",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-sm": "0.5rem",
+                        "stack-lg": "2rem",
+                        "pane-sidebar-width": "260px",
+                        "pane-context-width": "320px",
+                        "container-max-width": "800px",
+                        "inset-editor": "3rem",
+                        "stack-xs": "0.25rem",
+                        "stack-md": "1rem",
+                        "gutter": "1rem"
+                    },
+                    "fontFamily": {
+                        "metadata": ["Inter"],
+                        "editorial-display": ["Newsreader"],
+                        "ui-small": ["Inter"],
+                        "editorial-h2": ["Newsreader"],
+                        "editorial-h1": ["Newsreader"],
+                        "code-editor": ["monospace"],
+                        "ui-medium": ["Inter"],
+                        "preview-body": ["Newsreader"]
+                    },
+                    "fontSize": {
+                        "metadata": ["11px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "editorial-display": ["40px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "ui-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "editorial-h2": ["24px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "editorial-h1": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "code-editor": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "ui-medium": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "preview-body": ["18px", {"lineHeight": "1.7", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-app-bg text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center px-4 py-2 w-full z-40 fixed top-0">
+<div class="flex items-center gap-3">
+<button class="text-slate-600 dark:text-slate-400 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-200 ease-in-out">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-newsreader font-bold text-lg text-slate-900 dark:text-slate-50">recept</span>
+</div>
+<button class="bg-primary-container text-on-primary-container font-sans text-sm tracking-tight px-3 py-1.5 rounded-lg font-medium transition-colors duration-200 ease-in-out hover:bg-primary">
+            Commit
+        </button>
+</header>
+<!-- Main Workspace -->
+<main class="pt-14 pb-16 min-h-screen flex flex-col">
+<!-- Editor Chrome (Breadcrumbs & Status) -->
+<div class="bg-slate-50 border-b border-border-subtle px-4 py-2 flex items-center justify-between sticky top-12 z-30">
+<div class="flex items-center gap-1 overflow-hidden">
+<span class="font-ui-small text-ui-small text-text-secondary">docs</span>
+<span class="text-slate-300">/</span>
+<span class="font-ui-medium text-ui-medium text-text-primary truncate">system-architecture.md</span>
+</div>
+<div class="flex items-center gap-1.5 shrink-0">
+<div class="w-2 h-2 rounded-full bg-status-warning"></div>
+<span class="font-metadata text-metadata text-status-warning">Unsaved</span>
+</div>
+</div>
+<!-- Editor Surface -->
+<div class="flex-1 bg-editor-surface">
+<div class="max-w-[800px] mx-auto px-6 py-8">
+<textarea class="w-full h-[618px] border-none focus:ring-0 font-code-editor text-code-editor text-on-surface bg-transparent resize-none leading-relaxed" spellcheck="false"># System Architecture
+
+The core of rRepoDocs is built on a "Quiet Repository" philosophy. 
+
+## 1. Modular Core
+The architecture leverages a three-pane model to isolate file navigation, content editing, and contextual feedback.
+
+## 2. Distributed Sync
+All documents are persisted locally first, then synchronized to the primary remote using a conflict-resolution protocol.
+
+## 3. Rendering Engine
+Markdown is transformed into editorial-grade typography in real-time within the Preview pane.</textarea>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center bg-white dark:bg-slate-900 h-16 border-t border-slate-100 dark:border-slate-800">
+<!-- Explorer Tab -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 pt-1 scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="font-sans text-[10px] font-medium uppercase tracking-widest mt-0.5">Explorer</span>
+</a>
+<!-- Editor Tab (Active) -->
+<a class="flex flex-col items-center justify-center text-blue-600 dark:text-blue-400 border-t-2 border-blue-600 pt-1 scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+<span class="font-sans text-[10px] font-medium uppercase tracking-widest mt-0.5">Editor</span>
+</a>
+<!-- Preview Tab -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 pt-1 scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">visibility</span>
+<span class="font-sans text-[10px] font-medium uppercase tracking-widest mt-0.5">Preview</span>
+</a>
+<!-- History Tab -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 pt-1 scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-sans text-[10px] font-medium uppercase tracking-widest mt-0.5">History</span>
+</a>
+</nav>
+<!-- Navigation Drawer (Hidden initially, accessible via menu icon) -->
+<aside class="fixed inset-y-0 left-0 z-[60] flex flex-col h-full w-64 bg-slate-50 dark:bg-slate-950 shadow-2xl dark:shadow-none transform -translate-x-full transition-transform duration-300 ease-out" id="nav-drawer">
+<div class="font-newsreader italic text-xl px-6 py-4 text-on-surface">Workspace</div>
+<nav class="flex-1 flex flex-col mt-2">
+<div class="px-3 mb-2">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-r-4 border-blue-600 transition-colors" href="#">
+<span class="material-symbols-outlined">database</span>
+<span class="font-sans text-sm font-normal">Repositories</span>
+</a>
+</div>
+<div class="px-3 mb-2">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">schedule</span>
+<span class="font-sans text-sm font-normal">Recent Files</span>
+</a>
+</div>
+<div class="px-3 mb-2">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-sans text-sm font-normal">Drafts</span>
+</a>
+</div>
+<div class="mt-auto px-3 py-4 border-t border-slate-200 dark:border-slate-800">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-sans text-sm font-normal">Settings</span>
+</a>
+</div>
+</nav>
+</aside>
+</body></html>

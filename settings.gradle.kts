@@ -1,4 +1,4 @@
-rootProject.name = "rrepodocs"
+rootProject.name = "rRepoDocs"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
