@@ -71,17 +71,18 @@ fun MarkdownEditorPanel(
 
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        color = AppThemeTokens.colors.editorSurface,
         contentColor = MaterialTheme.colorScheme.onSurface,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (showChrome) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-                        .padding(horizontal = 40.dp, vertical = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        .background(AppThemeTokens.colors.editorSurface)
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
@@ -138,11 +139,11 @@ fun MarkdownEditorPanel(
                                 isDirty || saveInProgress -> AppThemeTokens.colors.statusWarning.copy(alpha = 0.22f)
                                 else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
                             },
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(999.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(7.dp),
                         ) {
                             Text(
-                                text = "• $statusLabel",
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                text = statusLabel,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = when {
                                     saveError != null -> MaterialTheme.colorScheme.error
@@ -184,7 +185,7 @@ fun MarkdownEditorPanel(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(AppThemeTokens.colors.borderSubtle.copy(alpha = 0.72f)),
+                        .background(AppThemeTokens.colors.borderSubtle.copy(alpha = 0.5f)),
                 )
             }
 
@@ -232,10 +233,10 @@ fun MarkdownEditorPanel(
             ) {
                 val textStyle = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp,
-                    lineHeight = 23.sp,
+                    fontSize = 15.sp,
+                    lineHeight = 24.sp,
                     color = if (canEdit) {
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.92f)
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },

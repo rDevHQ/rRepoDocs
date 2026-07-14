@@ -15,8 +15,6 @@ import com.rdev.rrepodocs.resources.Res
 import com.rdev.rrepodocs.resources.app_icon
 import com.rdev.rrepodocs.presentation.app.DesktopMenuBridge
 import org.jetbrains.compose.resources.painterResource
-import java.awt.Taskbar
-import javax.imageio.ImageIO
 import java.util.prefs.Preferences
 import kotlin.math.roundToInt
 
@@ -129,17 +127,7 @@ private fun configureMacOsApplication() {
     if (!System.getProperty("os.name").contains("Mac", ignoreCase = true)) return
     System.setProperty("apple.awt.application.name", "rRepoDocs")
     System.setProperty("com.apple.mrj.application.apple.menu.about.name", "rRepoDocs")
-
-    if (!Taskbar.isTaskbarSupported()) return
-
-    runCatching {
-        val iconStream = Thread.currentThread()
-            .contextClassLoader
-            .getResourceAsStream("app_icon.png") ?: return
-        iconStream.use { stream ->
-            Taskbar.getTaskbar().iconImage = ImageIO.read(stream)
-        }
-    }
+    System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua")
 }
 
 private fun persistWindowState(

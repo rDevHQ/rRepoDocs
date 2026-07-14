@@ -1,6 +1,7 @@
 package com.rdev.rrepodocs.presentation.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.TextFormat
@@ -40,8 +42,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.decodeToImageBitmap
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -70,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import com.rdev.rrepodocs.domain.model.RepoTreeNode
 import com.rdev.rrepodocs.domain.model.RepoTreeNodeKind
 import com.rdev.rrepodocs.presentation.app.AppThemeTokens
+import com.rdev.rrepodocs.platform.openExternalUrl
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -125,13 +127,9 @@ fun RepoTreePanel(
             filterTreeToMarkdownOnly(treeRoots)
         }
     }
-    val displayRepoName = remember(repositoryName) {
-        repositoryName.substringAfterLast('/').uppercase()
-    }
-
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = AppThemeTokens.colors.sidebarSurface,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp,
         shape = RoundedCornerShape(0.dp),
@@ -144,66 +142,37 @@ fun RepoTreePanel(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = AppThemeTokens.spacing.lg, vertical = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Button(
-                    onClick = onStartCreateDocument,
-                    enabled = !createInProgress && !createFolderInProgress,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    shape = RoundedCornerShape(6.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                ) {
-                    Text(
-                        text = "+  New Document",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(vertical = 5.dp),
-                    )
-                }
-
-                TextButton(
-                    onClick = { onStartCreateFolder(null) },
-                    enabled = !createInProgress && !createFolderInProgress,
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.CreateNewFolder,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                    SidebarActionButton(
+                        label = "New Document",
+                        icon = Icons.Outlined.Edit,
+                        enabled = !createInProgress && !createFolderInProgress,
+                        onClick = onStartCreateDocument,
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("New Folder")
+                    SidebarActionButton(
+                        label = "New Folder",
+                        icon = Icons.Outlined.CreateNewFolder,
+                        enabled = !createInProgress && !createFolderInProgress,
+                        onClick = { onStartCreateFolder(null) },
+                    )
+                    SidebarActionButton(
+                        label = if (isLoading) "Syncing" else "Sync",
+                        icon = Icons.Outlined.Refresh,
+                        enabled = !isLoading,
+                        onClick = onRefresh,
+                    )
                 }
 
-                TextButton(
-                    onClick = onRefresh,
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(6.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (isLoading) "Syncing" else "Sync")
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-                LeftRailSection(icon = Icons.Outlined.History, label = "RECENT")
-                LeftRailSection(icon = Icons.Outlined.StarOutline, label = "STARRED")
-                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = displayRepoName,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "Files",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f),
                 )
 
                 when {
@@ -235,7 +204,7 @@ fun RepoTreePanel(
                         } else {
                             LazyColumn(
                                 modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(3.dp),
                             ) {
                                 items(rows, key = { it.node.path }) { row ->
                                     val node = row.node
@@ -256,7 +225,7 @@ fun RepoTreePanel(
                                     val rowBackgroundTarget = when {
                                         isSelected || isExplorerSelected -> AppThemeTokens.colors.accentBlueSubtle
                                         isDragTarget -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                        isHovered -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.24f)
+                                        isHovered -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.18f)
                                         else -> Color.Transparent
                                     }
 
@@ -265,7 +234,7 @@ fun RepoTreePanel(
                                             .fillMaxWidth()
                                             .background(
                                                 color = rowBackgroundTarget,
-                                                shape = RoundedCornerShape(4.dp),
+                                                shape = RoundedCornerShape(6.dp),
                                             )
                                             .drawBehind {
                                                 if (isSelected) {
@@ -281,10 +250,10 @@ fun RepoTreePanel(
                                                 rowBoundsInRoot[node.path] = coordinates.boundsInRoot()
                                             }
                                             .padding(
-                                                start = (row.depth * 18).dp + 8.dp,
-                                                top = 10.dp,
-                                                end = 8.dp,
-                                                bottom = 10.dp,
+                                                start = (row.depth * 16).dp + 6.dp,
+                                                top = 4.dp,
+                                                end = 6.dp,
+                                                bottom = 4.dp,
                                             )
                                             .then(
                                                 if (canClick) {
@@ -382,10 +351,10 @@ fun RepoTreePanel(
                                                 },
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(16.dp),
+                                                modifier = Modifier.size(14.dp),
                                             )
                                         } else {
-                                            Spacer(modifier = Modifier.width(16.dp))
+                                            Spacer(modifier = Modifier.width(14.dp))
                                         }
 
                                         Icon(
@@ -398,12 +367,12 @@ fun RepoTreePanel(
                                             },
                                             contentDescription = null,
                                             tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(18.dp),
+                                            modifier = Modifier.size(16.dp),
                                         )
 
                                         Text(
                                             text = node.name,
-                                            style = MaterialTheme.typography.titleMedium,
+                                            style = MaterialTheme.typography.bodyMedium,
                                             color = when {
                                                 isSelected -> MaterialTheme.colorScheme.primary
                                                 isFolder || isSelectableMarkdown -> MaterialTheme.colorScheme.onSurface
@@ -446,7 +415,10 @@ fun RepoTreePanel(
                                 .background(AppThemeTokens.colors.borderSubtle.copy(alpha = 0.72f)),
                         )
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { openExternalUrl("https://rdevhq.github.io") }
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.Start,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -558,25 +530,55 @@ fun RepoTreePanel(
 }
 
 @Composable
-private fun LeftRailSection(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun SidebarActionButton(
     label: String,
+    icon: ImageVector,
+    enabled: Boolean,
+    onClick: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    var hovered by remember { mutableStateOf(false) }
+    val containerColor = when {
+        !enabled -> Color.Transparent
+        hovered -> MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.36f)
+        else -> Color.Transparent
+    }
+    val contentColor = when {
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.42f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(34.dp)
+            .onDesktopPointerHover(
+                onEnter = { hovered = true },
+                onExit = { hovered = false },
+            )
+            .clickable(enabled = enabled, onClick = onClick),
+        color = containerColor,
+        contentColor = contentColor,
+        shape = RoundedCornerShape(6.dp),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(17.dp),
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.86f),
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

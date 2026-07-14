@@ -74,7 +74,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +84,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rdev.rrepodocs.domain.model.DocumentShare
 import com.rdev.rrepodocs.domain.model.RepoTreeNode
+import com.rdev.rrepodocs.domain.model.RepoTreeNodeKind
 import com.rdev.rrepodocs.domain.model.ShareExpiryOption
 import com.rdev.rrepodocs.platform.copyTextToClipboard
 import com.rdev.rrepodocs.platform.openExternalUrl
@@ -344,6 +347,7 @@ fun WorkspaceScreen(
         if (createDialogVisible) {
             CreateDocumentDialog(
                 targetFolderDraft = createTargetFolderDraft,
+                targetFolderOptions = remember(treeRoots) { repositoryFolderPaths(treeRoots) },
                 fileNameDraft = createFileNameDraft,
                 commitMessageDraft = createCommitMessageDraft,
                 isCreating = createInProgress,
@@ -359,6 +363,7 @@ fun WorkspaceScreen(
         if (createFolderDialogVisible) {
             CreateFolderDialog(
                 parentFolderDraft = createFolderParentDraft,
+                parentFolderOptions = remember(treeRoots) { repositoryFolderPaths(treeRoots) },
                 folderNameDraft = createFolderNameDraft,
                 commitMessageDraft = createFolderCommitMessageDraft,
                 isCreating = createFolderInProgress,
@@ -494,6 +499,7 @@ private fun DesktopWorkspaceLayout(
     onSignOut: () -> Unit,
 ) {
     var rightPaneMode by rememberSaveable { mutableStateOf(RightPaneMode.Preview) }
+    var sidebarVisible by rememberSaveable { mutableStateOf(true) }
     var leftPaneRatio by rememberSaveable { mutableStateOf(0.15f) }
     var rightPaneRatio by rememberSaveable { mutableStateOf(0.19f) }
     Column(
@@ -534,6 +540,8 @@ private fun DesktopWorkspaceLayout(
     ) {
         WorkspaceHeader(
             repositoryName = repositoryName,
+            repositoryOwnerLogin = viewerUsername ?: repositoryOwnerLogin,
+            sidebarVisible = sidebarVisible,
             showNonMarkdownFiles = showNonMarkdownFiles,
             canCopyMarkdownFile = selectedMarkdownPath != null || activeDocumentPath != null,
             copiedMarkdownPath = copiedMarkdownPath,
@@ -544,30 +552,34 @@ private fun DesktopWorkspaceLayout(
             onStartShareDocument = onStartShareDocument,
             onStartSharedLinks = onStartSharedLinks,
             onToggleShowNonMarkdownFiles = onToggleShowNonMarkdownFiles,
+            onToggleSidebar = { sidebarVisible = !sidebarVisible },
             onBackToRepositories = onBackToRepositories,
             onSignOut = onSignOut,
         )
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface),
+                .background(AppThemeTokens.colors.appBg),
         ) {
             val density = LocalDensity.current
-            val splitterWidthDp = 12.dp
+            val splitterWidthDp = 18.dp
             val splitterWidthPx = with(density) { splitterWidthDp.toPx() }
             val minLeft = 0.11f
             val minCenter = 0.30f
             val minRight = 0.14f
-            val contentWidthPx = (with(density) { maxWidth.toPx() } - (splitterWidthPx * 2f)).coerceAtLeast(1f)
+            val splitterCount = if (sidebarVisible) 2 else 1
+            val contentWidthPx = (with(density) { maxWidth.toPx() } - (splitterWidthPx * splitterCount)).coerceAtLeast(1f)
 
             leftPaneRatio = leftPaneRatio.coerceIn(minLeft, 1f - rightPaneRatio - minCenter)
             rightPaneRatio = rightPaneRatio.coerceIn(minRight, 1f - leftPaneRatio - minCenter)
 
             val leftWidthDp = with(density) { (contentWidthPx * leftPaneRatio).toDp() }
             val rightWidthDp = with(density) { (contentWidthPx * rightPaneRatio).toDp() }
-            val centerWidthDp = with(density) { (contentWidthPx * (1f - leftPaneRatio - rightPaneRatio)).toDp() }
+            val centerRatio = if (sidebarVisible) 1f - leftPaneRatio - rightPaneRatio else 1f - rightPaneRatio
+            val centerWidthDp = with(density) { (contentWidthPx * centerRatio).toDp() }
 
             Row(modifier = Modifier.fillMaxSize()) {
+            if (sidebarVisible) {
             RepoTreePanel(
                 repositoryName = repositoryName,
                 repositoryOwnerLogin = viewerUsername ?: repositoryOwnerLogin,
@@ -618,6 +630,7 @@ private fun DesktopWorkspaceLayout(
                     leftPaneRatio = (leftPaneRatio + deltaRatio).coerceIn(minLeft, maxLeft)
                 },
             )
+            }
             MarkdownEditorPanel(
                 modifier = Modifier
                     .width(centerWidthDp)
@@ -644,7 +657,7 @@ private fun DesktopWorkspaceLayout(
                 width = splitterWidthDp,
                 onDragDeltaX = { deltaX ->
                     val deltaRatio = deltaX / contentWidthPx
-                    val maxRight = 1f - leftPaneRatio - minCenter
+                    val maxRight = if (sidebarVisible) 1f - leftPaneRatio - minCenter else 1f - minCenter
                     rightPaneRatio = (rightPaneRatio - deltaRatio).coerceIn(minRight, maxRight)
                 },
             )
@@ -671,10 +684,14 @@ private fun PaneSplitter(
     width: androidx.compose.ui.unit.Dp,
     onDragDeltaX: (Float) -> Unit,
 ) {
+    val railColor = Color(0xFF858D97)
+    val railBackground = Color(0xFF22282B)
+    val gripColor = Color(0xFFC2C8D0)
     Box(
         modifier = Modifier
             .fillMaxHeight()
             .width(width)
+            .background(railBackground)
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
@@ -685,10 +702,38 @@ private fun PaneSplitter(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .width(1.dp)
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
-        )
+                .align(Alignment.Center)
+                .fillMaxHeight(0.84f)
+                .width(2.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.00f to Color.Transparent,
+                            0.05f to railColor.copy(alpha = 0.22f),
+                            0.11f to railColor,
+                            0.89f to railColor,
+                            0.95f to railColor.copy(alpha = 0.22f),
+                            1.00f to Color.Transparent,
+                        ),
+                    ),
+                    shape = RoundedCornerShape(999.dp),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                repeat(3) {
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .height(2.dp)
+                            .background(gripColor, shape = RoundedCornerShape(999.dp)),
+                        )
+                }
+            }
+        }
     }
 }
 
@@ -1452,12 +1497,18 @@ private fun RightContextPane(
     onRetryHistory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val paneShape = RoundedCornerShape(
+        topStart = 14.dp,
+        topEnd = 0.dp,
+        bottomEnd = 0.dp,
+        bottomStart = 14.dp,
+    )
     Surface(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = modifier.clip(paneShape),
+        color = AppThemeTokens.colors.contextPaneSurface,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp,
-        shape = RoundedCornerShape(0.dp),
+        shape = paneShape,
     ) {
         Column(
             modifier = Modifier
@@ -1472,10 +1523,10 @@ private fun RightContextPane(
                 RightPaneMode.Preview -> {
                     if (activeDocumentPath == null) {
                         Surface(
-                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.75f),
+                            shape = RoundedCornerShape(8.dp),
                             modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 14.dp)
+                                .padding(horizontal = 22.dp, vertical = 18.dp)
                                 .fillMaxWidth(),
                         )
                         {
@@ -1492,7 +1543,7 @@ private fun RightContextPane(
                             showTitle = false,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                                .padding(horizontal = 22.dp, vertical = 18.dp),
                         )
                     }
                 }
@@ -1506,7 +1557,7 @@ private fun RightContextPane(
                         onRetry = onRetryHistory,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                            .padding(horizontal = 22.dp, vertical = 18.dp),
                     )
                 }
             }
@@ -1522,9 +1573,9 @@ private fun RightPaneTabHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
+            .background(AppThemeTokens.colors.contextPaneSurface)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         RightPaneTabButton(
             label = "Preview",
@@ -1554,9 +1605,9 @@ private fun RightPaneTabButton(
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    Column(
+    Surface(
         modifier = Modifier
-            .padding(vertical = 6.dp)
+            .height(34.dp)
             .onDesktopPointerHover(
                 onEnter = { hovered = true },
                 onExit = { hovered = false },
@@ -1566,29 +1617,46 @@ private fun RightPaneTabButton(
                 indication = null,
                 onClick = onClick,
             ),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        horizontalAlignment = Alignment.Start,
+        color = if (active) {
+            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (hovered) 0.82f else 0.42f)
+        },
+        shape = RoundedCornerShape(7.dp),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            color = labelColor,
-        )
         Box(
-            modifier = Modifier
-                .height(2.dp)
-                .width(70.dp)
-                .background(
-                    color = if (active) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    shape = RoundedCornerShape(99.dp),
-                ),
-        )
+            modifier = Modifier.padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                color = labelColor,
+            )
+        }
     }
+}
+
+private fun repositoryFolderPaths(roots: List<RepoTreeNode>): List<String> {
+    val folderPaths = mutableListOf<String>()
+
+    fun walk(nodes: List<RepoTreeNode>) {
+        nodes.forEach { node ->
+            if (node.kind == RepoTreeNodeKind.Folder) {
+                folderPaths += node.path
+                walk(node.children)
+            }
+        }
+    }
+
+    walk(roots)
+    return folderPaths.sortedBy { it.lowercase() }
 }
 
 @Composable
 private fun CreateDocumentDialog(
     targetFolderDraft: String,
+    targetFolderOptions: List<String>,
     fileNameDraft: String,
     commitMessageDraft: String,
     isCreating: Boolean,
@@ -1599,6 +1667,14 @@ private fun CreateDocumentDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val folderOptions = remember(targetFolderOptions, targetFolderDraft) {
+        (listOf("") + targetFolderOptions + listOf(targetFolderDraft.takeIf { it.isNotBlank() }.orEmpty()))
+            .distinct()
+            .sortedWith(compareBy<String> { it.isNotBlank() }.thenBy { it.lowercase() })
+    }
+    var targetFolderMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    val selectedTargetFolderLabel = targetFolderDraft.ifBlank { "Repository root" }
+
     AlertDialog(
         onDismissRequest = {
             if (!isCreating) {
@@ -1610,14 +1686,14 @@ private fun CreateDocumentDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(AppThemeTokens.spacing.sm),
             ) {
-                OutlinedTextField(
-                    value = targetFolderDraft,
-                    onValueChange = onTargetFolderChanged,
+                FolderPathDropdownField(
+                    label = "Target folder",
+                    selectedFolderLabel = selectedTargetFolderLabel,
+                    folderOptions = folderOptions,
+                    expanded = targetFolderMenuExpanded,
                     enabled = !isCreating,
-                    singleLine = true,
-                    label = { Text("Target folder (optional)") },
-                    placeholder = { Text("docs/guides") },
-                    modifier = Modifier.fillMaxWidth(),
+                    onExpandedChange = { targetFolderMenuExpanded = it },
+                    onFolderSelected = onTargetFolderChanged,
                 )
                 OutlinedTextField(
                     value = fileNameDraft,
@@ -1670,8 +1746,65 @@ private fun CreateDocumentDialog(
 }
 
 @Composable
+private fun FolderPathDropdownField(
+    label: String,
+    selectedFolderLabel: String,
+    folderOptions: List<String>,
+    expanded: Boolean,
+    enabled: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onFolderSelected: (String) -> Unit,
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = selectedFolderLabel,
+            onValueChange = {},
+            readOnly = true,
+            enabled = enabled,
+            singleLine = true,
+            label = { Text(label) },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.FolderOpen,
+                    contentDescription = null,
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled) {
+                    onExpandedChange(true)
+                },
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            folderOptions.forEach { folderPath ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = folderPath.ifBlank { "Repository root" },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    onClick = {
+                        onExpandedChange(false)
+                        onFolderSelected(folderPath)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun CreateFolderDialog(
     parentFolderDraft: String,
+    parentFolderOptions: List<String>,
     folderNameDraft: String,
     commitMessageDraft: String,
     isCreating: Boolean,
@@ -1682,6 +1815,14 @@ private fun CreateFolderDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val folderOptions = remember(parentFolderOptions, parentFolderDraft) {
+        (listOf("") + parentFolderOptions + listOf(parentFolderDraft.takeIf { it.isNotBlank() }.orEmpty()))
+            .distinct()
+            .sortedWith(compareBy<String> { it.isNotBlank() }.thenBy { it.lowercase() })
+    }
+    var parentFolderMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    val selectedParentFolderLabel = parentFolderDraft.ifBlank { "Repository root" }
+
     AlertDialog(
         onDismissRequest = {
             if (!isCreating) {
@@ -1693,14 +1834,14 @@ private fun CreateFolderDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(AppThemeTokens.spacing.sm),
             ) {
-                OutlinedTextField(
-                    value = parentFolderDraft,
-                    onValueChange = onParentFolderChanged,
+                FolderPathDropdownField(
+                    label = "Parent folder",
+                    selectedFolderLabel = selectedParentFolderLabel,
+                    folderOptions = folderOptions,
+                    expanded = parentFolderMenuExpanded,
                     enabled = !isCreating,
-                    singleLine = true,
-                    label = { Text("Parent folder (optional)") },
-                    placeholder = { Text("docs/guides") },
-                    modifier = Modifier.fillMaxWidth(),
+                    onExpandedChange = { parentFolderMenuExpanded = it },
+                    onFolderSelected = onParentFolderChanged,
                 )
                 OutlinedTextField(
                     value = folderNameDraft,
@@ -2249,6 +2390,8 @@ private fun pendingRevokingShareId(
 @Composable
 private fun WorkspaceHeader(
     repositoryName: String,
+    repositoryOwnerLogin: String,
+    sidebarVisible: Boolean,
     showNonMarkdownFiles: Boolean,
     canCopyMarkdownFile: Boolean,
     canShareDocument: Boolean,
@@ -2259,10 +2402,12 @@ private fun WorkspaceHeader(
     onStartShareDocument: () -> Unit,
     onStartSharedLinks: () -> Unit,
     onToggleShowNonMarkdownFiles: (() -> Unit),
+    onToggleSidebar: () -> Unit,
     onBackToRepositories: () -> Unit,
     onSignOut: () -> Unit,
 ) {
     var actionMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    val repositoryLabel = "$repositoryOwnerLogin → ${repositoryName.substringAfterLast('/')}"
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -2273,11 +2418,21 @@ private fun WorkspaceHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
-                .padding(horizontal = 22.dp, vertical = 6.dp),
+                .height(56.dp)
+                .padding(horizontal = 18.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(AppThemeTokens.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            IconButton(
+                onClick = onToggleSidebar,
+                modifier = Modifier.size(34.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Menu,
+                    contentDescription = if (sidebarVisible) "Hide sidebar" else "Show sidebar",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
@@ -2289,8 +2444,9 @@ private fun WorkspaceHeader(
                     modifier = Modifier.size(34.dp),
                 )
                 Text(
-                    text = "rRepoDocs",
-                    style = MaterialTheme.typography.headlineMedium,
+                    text = repositoryLabel,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }

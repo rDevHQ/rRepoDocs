@@ -53,22 +53,22 @@ fun MarkdownPreviewPanel(
 
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.72f),
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp,
-        shape = RoundedCornerShape(6.dp),
+        shape = RoundedCornerShape(8.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(AppThemeTokens.spacing.lg),
+                .padding(horizontal = 30.dp, vertical = 28.dp),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .align(Alignment.TopCenter)
-                    .widthIn(max = 700.dp),
-                verticalArrangement = Arrangement.spacedBy(AppThemeTokens.spacing.lg),
+                    .widthIn(max = 760.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
                 if (showTitle) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -81,8 +81,8 @@ fun MarkdownPreviewPanel(
                 }
                 if (markdown.isBlank()) {
                     Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.7f),
-                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f),
+                        shape = RoundedCornerShape(8.dp),
                     ) {
                         Text(
                             text = "No preview content yet.\nStart writing Markdown in the editor.",
@@ -95,7 +95,7 @@ fun MarkdownPreviewPanel(
                 if (blocks.isNotEmpty()) {
                     LazyColumn(
                         contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(22.dp),
                     ) {
                         itemsIndexed(blocks) { _, block ->
                             MarkdownPreviewBlockView(block = block)
@@ -120,19 +120,27 @@ private fun MarkdownPreviewBlockView(
     when (block) {
         is MarkdownPreviewBlock.Heading -> {
             val textStyle = when (block.level) {
-                1 -> MaterialTheme.typography.headlineLarge.copy(lineHeight = 42.sp, fontWeight = FontWeight.SemiBold)
-                2 -> MaterialTheme.typography.headlineMedium.copy(lineHeight = 36.sp, fontWeight = FontWeight.SemiBold)
-                3 -> MaterialTheme.typography.headlineMedium.copy(lineHeight = 32.sp, fontWeight = FontWeight.Medium)
+                1 -> MaterialTheme.typography.headlineLarge.copy(fontSize = 32.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold)
+                2 -> MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold)
+                3 -> MaterialTheme.typography.headlineMedium.copy(fontSize = 21.sp, lineHeight = 30.sp, fontWeight = FontWeight.Medium)
                 4 -> MaterialTheme.typography.headlineMedium.copy(lineHeight = 30.sp, fontWeight = FontWeight.Medium)
                 5 -> MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold, lineHeight = 28.sp)
                 else -> MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold, lineHeight = 28.sp)
             }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 MarkdownLinkText(
                     text = block.text,
                     style = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
                     modifier = Modifier.padding(top = if (block.level <= 2) 8.dp else 2.dp),
                 )
+                if (block.level <= 2) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)),
+                    )
+                }
             }
         }
 
@@ -140,7 +148,8 @@ private fun MarkdownPreviewBlockView(
             MarkdownLinkText(
                 text = block.text,
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    lineHeight = 31.sp,
+                    fontSize = 17.sp,
+                    lineHeight = 29.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
             )
@@ -161,7 +170,8 @@ private fun MarkdownPreviewBlockView(
                         MarkdownLinkText(
                             text = item,
                             style = MaterialTheme.typography.bodyLarge.copy(
-                                lineHeight = 31.sp,
+                                fontSize = 17.sp,
+                                lineHeight = 29.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                             ),
                             modifier = Modifier.weight(1f),
@@ -186,7 +196,8 @@ private fun MarkdownPreviewBlockView(
                         MarkdownLinkText(
                             text = item,
                             style = MaterialTheme.typography.bodyLarge.copy(
-                                lineHeight = 31.sp,
+                                fontSize = 17.sp,
+                                lineHeight = 29.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                             ),
                             modifier = Modifier.weight(1f),
@@ -225,7 +236,7 @@ private fun MarkdownPreviewBlockView(
                             shape = RoundedCornerShape(10.dp),
                         )
                         .background(
-                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.54f),
                             shape = RoundedCornerShape(10.dp),
                         )
                         .padding(AppThemeTokens.spacing.md),

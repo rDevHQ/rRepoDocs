@@ -1,6 +1,5 @@
 package com.rdev.rrepodocs.presentation.app
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -45,20 +44,20 @@ private val LightColors = lightColorScheme(
     error = Color(0xFFBA1A1A),
 )
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFB4C5FF),
-    onPrimary = Color(0xFF00174B),
-    primaryContainer = Color(0xFF003EA8),
-    onPrimaryContainer = Color(0xFFDCE7FF),
-    surface = Color(0xFF131B2E),
-    onSurface = Color(0xFFEFF2FF),
-    surfaceContainerLow = Color(0xFF1F2840),
-    surfaceContainerLowest = Color(0xFF182038),
-    surfaceContainer = Color(0xFF1B243C),
-    surfaceContainerHigh = Color(0xFF283248),
-    surfaceContainerHighest = Color(0xFF32405A),
-    onSurfaceVariant = Color(0xFFC3CCE4),
-    outline = Color(0xFF737686),
-    outlineVariant = Color(0xFF50576B),
+    primary = Color(0xFF8FA8C8),
+    onPrimary = Color(0xFF101821),
+    primaryContainer = Color(0xFF3E4B61),
+    onPrimaryContainer = Color(0xFFE4E9F1),
+    surface = Color(0xFF24292A),
+    onSurface = Color(0xFFE5E8EA),
+    surfaceContainerLow = Color(0xFF202627),
+    surfaceContainerLowest = Color(0xFF2D3545),
+    surfaceContainer = Color(0xFF505555),
+    surfaceContainerHigh = Color(0xFF3A4148),
+    surfaceContainerHighest = Color(0xFF46505E),
+    onSurfaceVariant = Color(0xFFAFB5BB),
+    outline = Color(0xFF353B3F),
+    outlineVariant = Color(0xFF40474D),
     secondary = Color(0xFFD3E4FE),
     tertiary = Color(0xFFFFB596),
     error = Color(0xFFFFB4AB),
@@ -175,14 +174,14 @@ private val LightAppColors = AppColorTokens(
 )
 
 private val DarkAppColors = AppColorTokens(
-    appBg = Color(0xFF131B2E),
-    sidebarSurface = Color(0xFF1F2840),
-    editorSurface = Color(0xFF182038),
-    contextPaneSurface = Color(0xFF1B243C),
-    borderSubtle = Color(0xFF50576B),
-    textPrimary = Color(0xFFEFF2FF),
-    textSecondary = Color(0xFFC3CCE4),
-    accentBlueSubtle = Color(0xFF20345E),
+    appBg = Color(0xFF24292A),
+    sidebarSurface = Color(0xFF202627),
+    editorSurface = Color(0xFF2D3545),
+    contextPaneSurface = Color(0xFF505555),
+    borderSubtle = Color(0xFF373F44),
+    textPrimary = Color(0xFFE5E8EA),
+    textSecondary = Color(0xFFAFB5BB),
+    accentBlueSubtle = Color(0xFF39485E),
     statusSuccess = Color(0xFF34D399),
     statusWarning = Color(0xFFFBBF24),
 )
@@ -198,8 +197,8 @@ object AppThemeTokens {
 
 @Composable
 fun RRepoDocsTheme(content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) DarkColors else LightColors
-    val appColors = if (isSystemInDarkTheme()) DarkAppColors else LightAppColors
+    val colors = DarkColors
+    val appColors = DarkAppColors
     val typography = appTypography()
     CompositionLocalProvider(
         LocalAppSpacing provides AppSpacing(),
