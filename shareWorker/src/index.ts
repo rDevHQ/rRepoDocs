@@ -446,7 +446,10 @@ function htmlHeaders(): HeadersInit {
 
 export function renderSharePage(share: ShareRecord): string {
   const renderedMarkdown = renderMarkdown(share.markdown);
-  const shareMeta = `Shared by ${share.owner_login} · ${formatDate(share.created_at)}`;
+  const shareMeta = [
+    `Shared by ${share.owner_login}`,
+    share.expires_at == null ? null : `Expires ${formatDate(share.expires_at)}`
+  ].filter((part): part is string => part != null).join(" · ");
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -457,12 +460,12 @@ export function renderSharePage(share: ShareRecord): string {
 </head>
 <body>
   <main>
-    <header class="share-header">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>rRepoDocs</span></div>
-      <p class="share-meta">${escapeHtml(shareMeta)}</p>
-      <h1>${escapeHtml(share.title)}</h1>
-    </header>
     <article>${renderedMarkdown}</article>
+    <footer class="share-meta">
+      <span>${escapeHtml(shareMeta)}</span>
+      <span aria-hidden="true"> · </span>
+      <a href="https://rdevhq.github.io">Shared with rRepoDocs</a>
+    </footer>
   </main>
 </body>
 </html>`;
@@ -580,7 +583,6 @@ function pageCss(): string {
 :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8f7f4; color: #1d1c1a; }
 body { margin: 0; }
 main { width: min(760px, calc(100vw - 32px)); margin: 0 auto; padding: 48px 0 68px; }
-header { margin-bottom: 28px; }
 .brand { display: inline-flex; align-items: center; gap: 8px; color: #4f4a43; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
 .brand-mark { width: 15px; height: 15px; border-radius: 4px; background: #1d1c1a; box-shadow: inset 0 0 0 4px #d8c7a5; }
 h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(38px, 7vw, 64px); line-height: 1.02; margin: 22px 0 0; font-weight: 600; }
@@ -593,7 +595,8 @@ pre { overflow-x: auto; background: #efede7; border: 1px solid #dedbd2; border-r
 code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .92em; }
 p code, li code { background: #efede7; border-radius: 5px; padding: 2px 5px; }
 .code-lang, .share-meta { color: #6f685e; font-size: 13px; }
-.share-meta { margin: 8px 0 0; line-height: 1.35; }
+.share-meta { border-top: 1px solid #dedbd2; margin-top: 36px; padding-top: 16px; line-height: 1.35; }
+.share-meta a { color: inherit; font-weight: 600; white-space: nowrap; }
 article { padding: 0; }
 `;
 }

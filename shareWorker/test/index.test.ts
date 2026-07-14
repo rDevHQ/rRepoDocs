@@ -67,7 +67,7 @@ describe("markdown rendering", () => {
 });
 
 describe("share page rendering", () => {
-  it("renders the calm public header before document content", () => {
+  it("renders document content first with attribution and expiry below", () => {
     const html = renderSharePage({
       id: "share-1",
       owner_github_user_id: "42",
@@ -82,11 +82,31 @@ describe("share page rendering", () => {
       revoked_at: null
     });
 
-    expect(html).toContain("<span>rRepoDocs</span>");
-    expect(html).toContain("Shared by rDevHQ · May 3, 2026");
-    expect(html).toContain("<h1>Hel kyckling i airfryer</h1>");
-    expect(html.indexOf("<h1>Hel kyckling i airfryer</h1>")).toBeLessThan(html.indexOf("<article>"));
+    expect(html).toContain("<article><p>Start content</p></article>");
+    expect(html).toContain("<span>Shared by rDevHQ · Expires Jun 2, 2026</span>");
+    expect(html).toContain('<a href="https://rdevhq.github.io">Shared with rRepoDocs</a>');
+    expect(html.indexOf("<article>")).toBeLessThan(html.indexOf("<footer"));
     expect(html).not.toContain("owner/repo / docs/chicken.md");
+    expect(html).not.toContain("<span>rRepoDocs</span>");
+    expect(html).not.toContain("Hel kyckling i airfryer</h1>");
+  });
+
+  it("omits expiry details for a share that does not expire", () => {
+    const html = renderSharePage({
+      id: "share-2",
+      owner_github_user_id: "42",
+      owner_login: "rDevHQ",
+      repo_full_name: "owner/repo",
+      document_path: "docs/notes.md",
+      source_sha: "abc123",
+      title: "Notes",
+      markdown: "Content",
+      expires_at: null,
+      created_at: "2026-05-03T10:00:00Z",
+      revoked_at: null
+    });
+
+    expect(html).toContain("<span>Shared by rDevHQ</span>");
     expect(html).not.toContain("Expires");
   });
 });
