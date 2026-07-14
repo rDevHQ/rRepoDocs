@@ -462,9 +462,8 @@ export function renderSharePage(share: ShareRecord): string {
   <main>
     <article>${renderedMarkdown}</article>
     <footer class="share-meta">
-      <span>${escapeHtml(shareMeta)}</span>
-      <span aria-hidden="true"> · </span>
       <a href="https://rdevhq.github.io">Shared with rRepoDocs</a>
+      <div>${escapeHtml(shareMeta)}</div>
     </footer>
   </main>
 </body>
@@ -596,7 +595,7 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; fo
 p code, li code { background: #efede7; border-radius: 5px; padding: 2px 5px; }
 .code-lang, .share-meta { color: #6f685e; font-size: 13px; }
 .share-meta { border-top: 1px solid #dedbd2; margin-top: 36px; padding-top: 16px; line-height: 1.35; }
-.share-meta a { color: inherit; font-weight: 600; white-space: nowrap; }
+.share-meta a { color: inherit; display: block; font-weight: 600; margin-bottom: 6px; white-space: nowrap; }
 article { padding: 0; }
 `;
 }

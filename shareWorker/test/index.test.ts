@@ -83,9 +83,10 @@ describe("share page rendering", () => {
     });
 
     expect(html).toContain("<article><p>Start content</p></article>");
-    expect(html).toContain("<span>Shared by rDevHQ · Expires Jun 2, 2026</span>");
+    expect(html).toContain("<div>Shared by rDevHQ · Expires Jun 2, 2026</div>");
     expect(html).toContain('<a href="https://rdevhq.github.io">Shared with rRepoDocs</a>');
     expect(html.indexOf("<article>")).toBeLessThan(html.indexOf("<footer"));
+    expect(html.indexOf("Shared with rRepoDocs")).toBeLessThan(html.indexOf("Shared by rDevHQ"));
     expect(html).not.toContain("owner/repo / docs/chicken.md");
     expect(html).not.toContain("<span>rRepoDocs</span>");
     expect(html).not.toContain("Hel kyckling i airfryer</h1>");
@@ -106,7 +107,7 @@ describe("share page rendering", () => {
       revoked_at: null
     });
 
-    expect(html).toContain("<span>Shared by rDevHQ</span>");
+    expect(html).toContain("<div>Shared by rDevHQ</div>");
     expect(html).not.toContain("Expires");
   });
 });
