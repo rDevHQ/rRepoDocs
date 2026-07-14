@@ -1,6 +1,7 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	"name": "rrepodocs-share-worker",
+	"account_id": "f5000d237b10b1a7e2ab89c897f1219a",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-04-26",
 	"compatibility_flags": [
@@ -11,7 +12,7 @@
 		"head_sampling_rate": 1
 	},
 	"vars": {
-		"PUBLIC_BASE_URL": "https://rrepodocs-share-worker.rdevhq.workers.dev",
+		"PUBLIC_BASE_URL": "https://rrepodocs-share-worker.ragonline.workers.dev",
 		"GITHUB_API_BASE_URL": "https://api.github.com",
 		"DEFAULT_EXPIRY_DAYS": "30",
 		"MAX_MARKDOWN_BYTES": "262144"
@@ -20,7 +21,7 @@
 		{
 			"binding": "DB",
 			"database_name": "rrepodocs-shares",
-			"database_id": "6e31c144-7c2a-4837-8016-d4d6add876c5",
+			"database_id": "6e485171-fe24-478e-b450-3412363fd0ff",
 			"migrations_dir": "migrations"
 		}
 	]
