@@ -31,6 +31,13 @@ worker-test:
 
 dmg:
 	./gradlew :composeApp:packageDmg
+	@dmg="$$(find composeApp/build/compose/binaries/main/dmg -maxdepth 1 -name '*.dmg' | head -n 1)"; \
+	if [ -z "$$dmg" ]; then \
+		echo "No DMG found under composeApp/build/compose/binaries/main/dmg"; \
+		exit 1; \
+	fi; \
+	cp -f "$$dmg" "$$HOME/Desktop/"; \
+	echo "Copied to $$HOME/Desktop/$$(basename $$dmg)"
 
 clean:
 	./gradlew clean
