@@ -21,7 +21,7 @@ import com.rdev.rrepodocs.resources.app_icon
 import org.jetbrains.compose.resources.painterResource
 
 private const val ApplicationVersion = "1.0.0"
-private const val LastUpdatedDate = "16 juli 2026"
+private const val LastUpdatedDate = "July 16, 2026"
 private const val ApplicationWebsite = "https://rdevhq.github.io/#rrepodocs"
 
 @Composable
@@ -31,7 +31,7 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
         icon = {
             Image(
                 painter = painterResource(Res.drawable.app_icon),
-                contentDescription = "rRepoDocs logotyp",
+                contentDescription = "rRepoDocs logo",
                 modifier = Modifier.size(64.dp),
             )
         },
@@ -51,18 +51,18 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = "En GitHub-först Markdown-redigerare.",
+                    text = "A GitHub-first Markdown editor.",
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
-                    text = "Version $ApplicationVersion · Uppdaterad $LastUpdatedDate",
+                    text = "Version $ApplicationVersion · Updated $LastUpdatedDate",
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "Utvecklad av Robert Gustavsson på rDEV.",
+                    text = "Developed by Robert Gustavsson at rDEV.",
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -71,12 +71,12 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("Klar")
+                Text("Done")
             }
         },
         dismissButton = {
             TextButton(onClick = { openExternalUrl(ApplicationWebsite) }) {
-                Text("Besök hemsidan")
+                Text("Visit website")
             }
         },
     )
