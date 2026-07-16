@@ -78,6 +78,7 @@ fun MarkdownEditorPanel(
     modifier: Modifier = Modifier,
     showChrome: Boolean = true,
     onEditorFocusChanged: (Boolean) -> Unit = {},
+    onScrollProgressChanged: (Float) -> Unit = {},
     sourceNavigation: EditorSourceNavigation? = null,
     contentHorizontalPadding: Dp = 56.dp,
     contentVerticalPadding: Dp = 48.dp,
@@ -122,6 +123,12 @@ fun MarkdownEditorPanel(
             }
             historyValue.value = updatedValue
         }
+    }
+
+    LaunchedEffect(editorScroll) {
+        snapshotFlow {
+            if (editorScroll.maxValue == 0) 0f else editorScroll.value.toFloat() / editorScroll.maxValue
+        }.collect(onScrollProgressChanged)
     }
 
     LaunchedEffect(sourceNavigation?.requestId) {

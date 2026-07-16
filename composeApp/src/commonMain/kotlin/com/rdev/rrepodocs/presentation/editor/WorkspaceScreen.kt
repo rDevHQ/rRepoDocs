@@ -523,6 +523,7 @@ private fun DesktopWorkspaceLayout(
     onPreviewSourceSelected: (Int) -> Unit,
 ) {
     var rightPaneMode by rememberSaveable { mutableStateOf(RightPaneMode.Preview) }
+    var editorScrollProgress by remember(activeDocumentPath) { mutableStateOf(0f) }
     var sidebarVisible by rememberSaveable { mutableStateOf(true) }
     var rightPaneVisible by rememberSaveable { mutableStateOf(true) }
     var leftPaneRatio by rememberSaveable { mutableStateOf(0.15f) }
@@ -677,6 +678,7 @@ private fun DesktopWorkspaceLayout(
                 onRetryOpenDocument = onRetryDocumentOpen,
                 onDiscardUnsavedAndOpenPending = onDiscardUnsavedAndOpenPending,
                 onKeepEditingCurrent = onKeepEditingCurrent,
+                onScrollProgressChanged = { editorScrollProgress = it },
                 sourceNavigation = sourceNavigation,
             )
             if (rightPaneVisible) {
@@ -701,6 +703,7 @@ private fun DesktopWorkspaceLayout(
                     historyError = documentHistoryError,
                     onRetryHistory = onRetryDocumentHistory,
                     onPreviewSourceSelected = onPreviewSourceSelected,
+                    editorScrollProgress = editorScrollProgress,
                     modifier = Modifier
                         .fillMaxHeight()
                         .width(rightWidthDp),
@@ -1566,6 +1569,7 @@ private fun RightContextPane(
     historyError: String?,
     onRetryHistory: () -> Unit,
     onPreviewSourceSelected: (Int) -> Unit,
+    editorScrollProgress: Float,
     modifier: Modifier = Modifier,
 ) {
     val paneShape = RoundedCornerShape(
@@ -1613,6 +1617,7 @@ private fun RightContextPane(
                             markdown = markdown,
                             showTitle = false,
                             onNavigateToSource = onPreviewSourceSelected,
+                            sourceScrollProgress = editorScrollProgress,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 22.dp, vertical = 18.dp),

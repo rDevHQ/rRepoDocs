@@ -17,12 +17,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,10 +50,24 @@ fun MarkdownPreviewPanel(
     markdown: String,
     showTitle: Boolean = true,
     onNavigateToSource: ((Int) -> Unit)? = null,
+    sourceScrollProgress: Float? = null,
     modifier: Modifier = Modifier,
 ) {
     val renderer = remember { RenderMarkdownPreviewUseCase() }
     val blocks = remember(markdown) { renderer(markdown) }
+    val previewScrollState = rememberLazyListState()
+    val targetBlockIndex = remember(blocks, markdown.length, sourceScrollProgress) {
+        sourceScrollProgress?.let { progress ->
+            val targetOffset = (markdown.length * progress).toInt()
+            blocks.indexOfLast { block ->
+                block.sourceOffsetOrNull()?.let { it <= targetOffset } == true
+            }.coerceAtLeast(0)
+        }
+    }
+
+    LaunchedEffect(targetBlockIndex) {
+        targetBlockIndex?.let { previewScrollState.scrollToItem(it) }
+    }
 
     Surface(
         modifier = modifier,
@@ -96,6 +112,7 @@ fun MarkdownPreviewPanel(
                 }
                 if (blocks.isNotEmpty()) {
                     LazyColumn(
+                        state = previewScrollState,
                         contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(22.dp),
                     ) {
