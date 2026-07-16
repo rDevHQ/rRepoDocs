@@ -24,18 +24,26 @@ import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.FormatBold
 import androidx.compose.material.icons.outlined.FormatItalic
 import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,6 +104,7 @@ fun MarkdownEditorPanel(
     val editHistory = remember(activeDocumentPath) { MarkdownEditHistory() }
     val historyValue = remember(activeDocumentPath) { TextFieldValueMemory(editorState.asTextFieldValue()) }
     val latestTextSelection = remember(activeDocumentPath) { TextSelectionMemory() }
+    var editorHasFocus by remember(activeDocumentPath) { mutableStateOf(false) }
 
     LaunchedEffect(content) {
         if (content != editorState.text.toString()) {
@@ -112,7 +121,11 @@ fun MarkdownEditorPanel(
 
     LaunchedEffect(editorState) {
         snapshotFlow { editorState.selection }.collect { selection ->
-            latestTextSelection.value = selection.takeUnless { it.start == it.end }
+            if (selection.start != selection.end) {
+                latestTextSelection.value = selection
+            } else if (editorHasFocus) {
+                latestTextSelection.value = null
+            }
         }
     }
 
@@ -383,6 +396,7 @@ fun MarkdownEditorPanel(
                         .fillMaxSize()
                         .focusRequester(editorFocusRequester)
                         .onFocusChanged {
+                            editorHasFocus = it.isFocused
                             onEditorFocusChanged(it.isFocused)
                         },
                 )
@@ -444,8 +458,14 @@ private fun MarkdownFormattingToolbar(
             MarkdownHistoryButton("Redo", enabled && canRedo, onRedo) {
                 Icon(Icons.AutoMirrored.Outlined.Redo, contentDescription = null)
             }
-            MarkdownFormatButton(MarkdownFormat.Heading, "Heading", enabled, onFormat) {
-                Icon(Icons.Outlined.Title, contentDescription = null)
+            MarkdownFormatButton(MarkdownFormat.Heading1, "Heading 1", enabled, onFormat) {
+                ToolbarFormatLabel("H1")
+            }
+            MarkdownFormatButton(MarkdownFormat.Heading2, "Heading 2", enabled, onFormat) {
+                ToolbarFormatLabel("H2")
+            }
+            MarkdownFormatButton(MarkdownFormat.Heading3, "Heading 3", enabled, onFormat) {
+                ToolbarFormatLabel("H3")
             }
             MarkdownFormatButton(MarkdownFormat.Bold, "Bold", enabled, onFormat) {
                 Icon(Icons.Outlined.FormatBold, contentDescription = null)
@@ -453,14 +473,41 @@ private fun MarkdownFormattingToolbar(
             MarkdownFormatButton(MarkdownFormat.Italic, "Italic", enabled, onFormat) {
                 Icon(Icons.Outlined.FormatItalic, contentDescription = null)
             }
+            MarkdownFormatButton(MarkdownFormat.BoldItalic, "Bold italic", enabled, onFormat) {
+                ToolbarFormatLabel("B+I")
+            }
+            MarkdownFormatButton(MarkdownFormat.Strikethrough, "Strikethrough", enabled, onFormat) {
+                ToolbarFormatLabel("S̶")
+            }
             MarkdownFormatButton(MarkdownFormat.BulletList, "Bullet list", enabled, onFormat) {
                 Icon(Icons.AutoMirrored.Outlined.FormatListBulleted, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.OrderedList, "Ordered list", enabled, onFormat) {
+                ToolbarFormatLabel("1.")
+            }
+            MarkdownFormatButton(MarkdownFormat.TaskList, "Task list", enabled, onFormat) {
+                ToolbarFormatLabel("[ ]")
+            }
+            MarkdownFormatButton(MarkdownFormat.Blockquote, "Blockquote", enabled, onFormat) {
+                ToolbarFormatLabel(">")
             }
             MarkdownFormatButton(MarkdownFormat.Link, "Link", enabled, onFormat) {
                 Icon(Icons.Outlined.Link, contentDescription = null)
             }
+            MarkdownFormatButton(MarkdownFormat.Image, "Image", enabled, onFormat) {
+                ToolbarFormatLabel("Img")
+            }
             MarkdownFormatButton(MarkdownFormat.InlineCode, "Inline code", enabled, onFormat) {
                 Icon(Icons.Outlined.Code, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.CodeBlock, "Code block", enabled, onFormat) {
+                ToolbarFormatLabel("```")
+            }
+            MarkdownFormatButton(MarkdownFormat.Table, "Table", enabled, onFormat) {
+                ToolbarFormatLabel("Tbl")
+            }
+            MarkdownFormatButton(MarkdownFormat.HorizontalRule, "Horizontal rule", enabled, onFormat) {
+                ToolbarFormatLabel("—")
             }
             MarkdownFormatButton(MarkdownFormat.HardLineBreak, "Radbrytning", enabled, onFormat) {
                 Text("↵", style = MaterialTheme.typography.titleMedium)
@@ -470,22 +517,35 @@ private fun MarkdownFormattingToolbar(
 }
 
 @Composable
+private fun ToolbarFormatLabel(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun MarkdownHistoryButton(
     label: String,
     enabled: Boolean,
     onClick: () -> Unit,
     icon: @Composable () -> Unit,
 ) {
-    IconButton(
-        modifier = Modifier.semantics { contentDescription = label },
-        enabled = enabled,
-        onClick = onClick,
-    ) {
-        icon()
+    MarkdownToolbarTooltip(label) {
+        IconButton(
+            modifier = Modifier.semantics { contentDescription = label },
+            enabled = enabled,
+            onClick = onClick,
+        ) {
+            icon()
+        }
     }
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun MarkdownFormatButton(
     format: MarkdownFormat,
     label: String,
@@ -493,11 +553,31 @@ private fun MarkdownFormatButton(
     onFormat: (MarkdownFormat) -> Unit,
     icon: @Composable () -> Unit,
 ) {
-    IconButton(
-        modifier = Modifier.semantics { contentDescription = label },
-        enabled = enabled,
-        onClick = { onFormat(format) },
-    ) {
-        icon()
+    MarkdownToolbarTooltip(label) {
+        IconButton(
+            modifier = Modifier.semantics { contentDescription = label },
+            enabled = enabled,
+            onClick = { onFormat(format) },
+        ) {
+            icon()
+        }
     }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun MarkdownToolbarTooltip(
+    label: String,
+    content: @Composable () -> Unit,
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        tooltip = {
+            PlainTooltip {
+                Text(label)
+            }
+        },
+        state = rememberTooltipState(),
+        content = content,
+    )
 }

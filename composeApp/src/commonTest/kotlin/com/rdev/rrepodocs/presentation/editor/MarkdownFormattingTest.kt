@@ -63,4 +63,71 @@ class MarkdownFormattingTest {
         assertEquals("First line  \nSecond line", result.text)
         assertEquals(TextRange(13), result.selection)
     }
+
+    @Test
+    fun supportsAllHeadingLevelsAndBlockPrefixes() {
+        assertEquals(
+            "# Title",
+            applyMarkdownFormat(TextFieldValue("Title", TextRange(0)), MarkdownFormat.Heading1).text,
+        )
+        assertEquals(
+            "## Title",
+            applyMarkdownFormat(TextFieldValue("Title", TextRange(0)), MarkdownFormat.Heading2).text,
+        )
+        assertEquals(
+            "### Title",
+            applyMarkdownFormat(TextFieldValue("Title", TextRange(0)), MarkdownFormat.Heading3).text,
+        )
+        assertEquals(
+            "> Quote",
+            applyMarkdownFormat(TextFieldValue("Quote", TextRange(0)), MarkdownFormat.Blockquote).text,
+        )
+        assertEquals(
+            "- [ ] Task",
+            applyMarkdownFormat(TextFieldValue("Task", TextRange(0)), MarkdownFormat.TaskList).text,
+        )
+    }
+
+    @Test
+    fun supportsOrderedListsAndCombinedInlineFormats() {
+        assertEquals(
+            "1. First\n1. Second",
+            applyMarkdownFormat(TextFieldValue("First\nSecond", TextRange(0, 12)), MarkdownFormat.OrderedList).text,
+        )
+        assertEquals(
+            "***text***",
+            applyMarkdownFormat(TextFieldValue("text", TextRange(0, 4)), MarkdownFormat.BoldItalic).text,
+        )
+        assertEquals(
+            "~~text~~",
+            applyMarkdownFormat(TextFieldValue("text", TextRange(0, 4)), MarkdownFormat.Strikethrough).text,
+        )
+    }
+
+    @Test
+    fun supportsImageAndCodeBlockPlaceholders() {
+        assertEquals(
+            "![alt text](url)",
+            applyMarkdownFormat(TextFieldValue("", TextRange(0)), MarkdownFormat.Image).text,
+        )
+        assertEquals(
+            "```\ncode\n```",
+            applyMarkdownFormat(TextFieldValue("", TextRange(0)), MarkdownFormat.CodeBlock).text,
+        )
+    }
+
+    @Test
+    fun insertsTableAndHorizontalRule() {
+        val table = applyMarkdownFormat(TextFieldValue("", TextRange(0)), MarkdownFormat.Table)
+
+        assertEquals(
+            "| Column 1 | Column 2 |\n| --- | --- |\n| Value 1 | Value 2 |",
+            table.text,
+        )
+        assertEquals(TextRange(2, 10), table.selection)
+        assertEquals(
+            "---",
+            applyMarkdownFormat(TextFieldValue("", TextRange(0)), MarkdownFormat.HorizontalRule).text,
+        )
+    }
 }

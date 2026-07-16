@@ -4,12 +4,23 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 
 internal enum class MarkdownFormat {
-    Heading,
+    Heading1,
+    Heading2,
+    Heading3,
     Bold,
     Italic,
+    BoldItalic,
+    Strikethrough,
     BulletList,
+    OrderedList,
+    TaskList,
+    Blockquote,
     Link,
+    Image,
     InlineCode,
+    CodeBlock,
+    Table,
+    HorizontalRule,
     HardLineBreak,
 }
 
@@ -17,12 +28,27 @@ internal fun applyMarkdownFormat(
     value: TextFieldValue,
     format: MarkdownFormat,
 ): TextFieldValue = when (format) {
-    MarkdownFormat.Heading -> prefixSelectedLines(value, "# ")
+    MarkdownFormat.Heading1 -> prefixSelectedLines(value, "# ")
+    MarkdownFormat.Heading2 -> prefixSelectedLines(value, "## ")
+    MarkdownFormat.Heading3 -> prefixSelectedLines(value, "### ")
     MarkdownFormat.BulletList -> prefixSelectedLines(value, "- ")
+    MarkdownFormat.OrderedList -> prefixSelectedLines(value, "1. ")
+    MarkdownFormat.TaskList -> prefixSelectedLines(value, "- [ ] ")
+    MarkdownFormat.Blockquote -> prefixSelectedLines(value, "> ")
     MarkdownFormat.Bold -> wrapSelection(value, "**", "**", "bold text")
     MarkdownFormat.Italic -> wrapSelection(value, "*", "*", "italic text")
+    MarkdownFormat.BoldItalic -> wrapSelection(value, "***", "***", "bold italic text")
+    MarkdownFormat.Strikethrough -> wrapSelection(value, "~~", "~~", "strikethrough text")
     MarkdownFormat.InlineCode -> wrapSelection(value, "`", "`", "code")
     MarkdownFormat.Link -> wrapSelection(value, "[", "](url)", "link text")
+    MarkdownFormat.Image -> wrapSelection(value, "![", "](url)", "alt text")
+    MarkdownFormat.CodeBlock -> wrapSelection(value, "```\n", "\n```", "code")
+    MarkdownFormat.Table -> replaceSelection(
+        value,
+        "| Column 1 | Column 2 |\n| --- | --- |\n| Value 1 | Value 2 |",
+        selectionRange = TextRange(2, 10),
+    )
+    MarkdownFormat.HorizontalRule -> replaceSelection(value, "---")
     MarkdownFormat.HardLineBreak -> replaceSelection(value, "  \n")
 }
 
@@ -54,14 +80,17 @@ private fun wrapSelection(
 private fun replaceSelection(
     value: TextFieldValue,
     replacement: String,
+    selectionRange: TextRange? = null,
 ): TextFieldValue {
     val selection = normalizedSelection(value.selection)
     val newText = value.text.replaceRange(selection.start, selection.end, replacement)
-    val cursor = selection.start + replacement.length
+    val resultSelection = selectionRange?.let {
+        TextRange(selection.start + it.start, selection.start + it.end)
+    } ?: TextRange(selection.start + replacement.length)
 
     return value.copy(
         text = newText,
-        selection = TextRange(cursor),
+        selection = resultSelection,
     )
 }
 
