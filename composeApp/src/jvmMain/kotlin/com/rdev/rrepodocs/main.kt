@@ -15,6 +15,7 @@ import com.rdev.rrepodocs.resources.Res
 import com.rdev.rrepodocs.resources.app_icon
 import com.rdev.rrepodocs.presentation.app.DesktopMenuBridge
 import org.jetbrains.compose.resources.painterResource
+import java.awt.Desktop
 import java.util.prefs.Preferences
 import kotlin.math.roundToInt
 
@@ -124,7 +125,7 @@ fun main() {
                         onCheckedChange = { DesktopMenuBridge.onToggleShowNonMarkdownFiles?.invoke() },
                     )
                 }
-                Menu("rRepoDocs") {
+                Menu("Account") {
                     Item(
                         text = "Log Out",
                         enabled = DesktopMenuBridge.isSignedIn,
@@ -149,6 +150,9 @@ private fun configureMacOsApplication() {
     System.setProperty("apple.awt.application.name", "rRepoDocs")
     System.setProperty("com.apple.mrj.application.apple.menu.about.name", "rRepoDocs")
     System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua")
+    if (Desktop.isDesktopSupported()) {
+        Desktop.getDesktop().setAboutHandler { DesktopMenuBridge.onShowAbout?.invoke() }
+    }
 }
 
 private fun persistWindowState(

@@ -395,6 +395,16 @@ class AppViewModel {
         )
     }
 
+    fun collapseFolderExpansions() {
+        uiState = uiState.copy(expandedFolderPaths = emptySet())
+    }
+
+    fun expandFolderExpansions() {
+        uiState = uiState.copy(
+            expandedFolderPaths = expandedFolderPathsAfterLoad(uiState.repoTreeRoots),
+        )
+    }
+
     fun selectExplorerPath(path: String, additiveSelection: Boolean) {
         uiState = uiState.copy(
             selectedExplorerPaths = if (additiveSelection) {
@@ -654,7 +664,7 @@ class AppViewModel {
             return
         }
         val selectedPath = uiState.selectedMarkdownPath ?: uiState.activeDocument?.path?.value
-        val suggestedFolder = normalizeFolder(selectedPath?.substringBeforeLast('/', ""))
+        val suggestedFolder = normalizeFolder(selectedExplorerFolder ?: selectedPath?.substringBeforeLast('/', ""))
         val defaultCommitMessage = defaultCreateCommitMessage(DEFAULT_NEW_FILE_NAME)
         uiState = uiState.copy(
             createDialogVisible = true,
@@ -670,6 +680,11 @@ class AppViewModel {
 
     fun requestShowCreateFolderDialog(parentFolder: String? = null) {
         if (uiState.createInProgress || uiState.createFolderInProgress || uiState.renameInProgress || uiState.moveInProgress) {
+        val selectedExplorerFolder = uiState.selectedExplorerPaths
+            .singleOrNull()
+            ?.let { path -> findTreeNode(path, uiState.repoTreeRoots) }
+            ?.takeIf { node -> node.kind == RepoTreeNodeKind.Folder }
+            ?.path
             return
         }
 

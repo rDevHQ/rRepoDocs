@@ -932,6 +932,8 @@ fun AppRoot() {
                     treeLoading = appState.repoTreeLoading,
                     treeError = appState.repoTreeError,
                     onToggleFolder = appViewModel::toggleFolderExpansion,
+                    onCollapseFolders = appViewModel::collapseFolderExpansions,
+                    onExpandFolders = appViewModel::expandFolderExpansions,
                     onSelectExplorerPath = appViewModel::selectExplorerPath,
                     onToggleShowNonMarkdownFiles = appViewModel::toggleShowNonMarkdownFiles,
                     onSelectMarkdownFile = appViewModel::requestOpenMarkdownFile,

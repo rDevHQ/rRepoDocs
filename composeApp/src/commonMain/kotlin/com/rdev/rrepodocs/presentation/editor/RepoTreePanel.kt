@@ -35,9 +35,12 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.TextFormat
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.UnfoldLess
+import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -55,7 +58,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.decodeToImageBitmap
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -71,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import com.rdev.rrepodocs.domain.model.RepoTreeNode
 import com.rdev.rrepodocs.domain.model.RepoTreeNodeKind
 import com.rdev.rrepodocs.presentation.app.AppThemeTokens
+import com.rdev.rrepodocs.platform.copyTextToClipboard
 import com.rdev.rrepodocs.platform.openExternalUrl
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -93,6 +96,8 @@ fun RepoTreePanel(
     isLoading: Boolean,
     errorMessage: String?,
     onToggleFolder: (String) -> Unit,
+    onCollapseFolders: () -> Unit,
+    onExpandFolders: () -> Unit,
     onSelectExplorerPath: (String, Boolean) -> Unit,
     onSelectMarkdownFile: (String) -> Unit,
     onStartCreateDocument: () -> Unit,
@@ -145,35 +150,47 @@ fun RepoTreePanel(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SidebarActionButton(
-                        label = "New Document",
-                        icon = Icons.Outlined.Edit,
+                    Text(
+                        text = "FILES",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    ExplorerHeaderAction(
+                        contentDescription = "New file",
+                        icon = Icons.Outlined.Description,
                         enabled = !createInProgress && !createFolderInProgress,
                         onClick = onStartCreateDocument,
                     )
-                    SidebarActionButton(
-                        label = "New Folder",
+                    ExplorerHeaderAction(
+                        contentDescription = "New folder",
                         icon = Icons.Outlined.CreateNewFolder,
                         enabled = !createInProgress && !createFolderInProgress,
                         onClick = { onStartCreateFolder(null) },
                     )
-                    SidebarActionButton(
-                        label = if (isLoading) "Syncing" else "Sync",
+                    ExplorerHeaderAction(
+                        contentDescription = if (isLoading) "Syncing" else "Sync",
                         icon = Icons.Outlined.Refresh,
                         enabled = !isLoading,
                         onClick = onRefresh,
                     )
+                    ExplorerHeaderAction(
+                        contentDescription = "Expand all folders",
+                        icon = Icons.Outlined.UnfoldMore,
+                        enabled = expandedFolderPaths.size < allFolderPaths(visibleTreeRoots).size,
+                        onClick = onExpandFolders,
+                    )
+                    ExplorerHeaderAction(
+                        contentDescription = "Collapse folders",
+                        icon = Icons.Outlined.UnfoldLess,
+                        enabled = expandedFolderPaths.isNotEmpty(),
+                        onClick = onCollapseFolders,
+                    )
                 }
-
-                Text(
-                    text = "Files",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f),
-                )
 
                 when {
                     isLoading && visibleTreeRoots.isEmpty() -> {
@@ -321,7 +338,7 @@ fun RepoTreePanel(
                                                 },
                                             )
                                             .onDesktopContextPress(enabled = isContextActionable) { localPress ->
-                                                    onSelectExplorerPath(node.path, node.path in selectedExplorerPaths)
+                                                    onSelectExplorerPath(node.path, if (isFolder) false else node.path in selectedExplorerPaths)
                                                     if (isSelectableMarkdown) {
                                                         onSelectMarkdownFile(node.path)
                                                     }
@@ -453,11 +470,35 @@ fun RepoTreePanel(
                     if (selectedIsFolder) path else path.substringBeforeLast('/', "")
                 } ?: ""
                 DropdownMenuItem(
-                    text = { Text("New Folder") },
+                    text = { Text("New File...") },
+                    leadingIcon = { Icon(imageVector = Icons.Outlined.Description, contentDescription = null) },
+                    enabled = selectedIsFolder && !createInProgress,
+                    onClick = {
+                        if (selectedIsFolder) {
+                            onStartCreateDocument()
+                        }
+                        contextMenuPath = null
+                        contextMenuPositionInRoot = null
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text("New Folder...") },
                     leadingIcon = { Icon(imageVector = Icons.Outlined.CreateNewFolder, contentDescription = null) },
                     enabled = selectedIsFolder && !createFolderInProgress,
                     onClick = {
                         onStartCreateFolder(if (selectedIsFolder) selectedPath else pasteDestinationFolder)
+                        contextMenuPath = null
+                        contextMenuPositionInRoot = null
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text("Copy GitHub Path") },
+                    leadingIcon = { Icon(imageVector = Icons.Outlined.ContentCopy, contentDescription = null) },
+                    enabled = selectedIsFolder,
+                    onClick = {
+                        if (selectedIsFolder) {
+                            copyTextToClipboard("$repositoryName/$selectedPath")
+                        }
                         contextMenuPath = null
                         contextMenuPositionInRoot = null
                     },
@@ -529,56 +570,39 @@ fun RepoTreePanel(
     }
 }
 
+private fun allFolderPaths(nodes: List<RepoTreeNode>): Set<String> {
+    val paths = mutableSetOf<String>()
+
+    fun walk(currentNodes: List<RepoTreeNode>) {
+        currentNodes.forEach { node ->
+            if (node.kind == RepoTreeNodeKind.Folder) {
+                paths += node.path
+                walk(node.children)
+            }
+        }
+    }
+
+    walk(nodes)
+    return paths
+}
+
 @Composable
-private fun SidebarActionButton(
-    label: String,
-    icon: ImageVector,
+private fun ExplorerHeaderAction(
+    contentDescription: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    var hovered by remember { mutableStateOf(false) }
-    val containerColor = when {
-        !enabled -> Color.Transparent
-        hovered -> MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.36f)
-        else -> Color.Transparent
-    }
-    val contentColor = when {
-        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.42f)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(34.dp)
-            .onDesktopPointerHover(
-                onEnter = { hovered = true },
-                onExit = { hovered = false },
-            )
-            .clickable(enabled = enabled, onClick = onClick),
-        color = containerColor,
-        contentColor = contentColor,
-        shape = RoundedCornerShape(6.dp),
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.size(28.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(16.dp),
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(17.dp),
+        )
     }
 }
 
