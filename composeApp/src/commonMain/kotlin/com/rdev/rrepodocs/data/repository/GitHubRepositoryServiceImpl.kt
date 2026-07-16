@@ -723,6 +723,7 @@ class GitHubRepositoryServiceImpl(
         val owner = obj.objectField("owner")
         val ownerLogin = owner?.string("login") ?: "unknown"
         val ownerAvatarUrl = owner?.string("avatar_url")
+        val defaultBranch = obj.string("default_branch") ?: "HEAD"
 
         return RepositoryRef(
             id = id,
@@ -731,6 +732,7 @@ class GitHubRepositoryServiceImpl(
             ownerLogin = ownerLogin,
             ownerAvatarUrl = ownerAvatarUrl,
             isPrivate = privateRepo,
+            defaultBranch = defaultBranch,
         )
     }
 
@@ -743,6 +745,7 @@ class GitHubRepositoryServiceImpl(
                 ownerLogin = "demo-user",
                 ownerAvatarUrl = "https://github.com/demo-user.png",
                 isPrivate = true,
+                defaultBranch = "main",
             ),
             RepositoryRef(
                 id = 2,
@@ -751,6 +754,7 @@ class GitHubRepositoryServiceImpl(
                 ownerLogin = "demo-user",
                 ownerAvatarUrl = "https://github.com/demo-user.png",
                 isPrivate = true,
+                defaultBranch = "main",
             ),
             RepositoryRef(
                 id = 3,
@@ -759,6 +763,7 @@ class GitHubRepositoryServiceImpl(
                 ownerLogin = "demo-user",
                 ownerAvatarUrl = "https://github.com/demo-user.png",
                 isPrivate = false,
+                defaultBranch = "main",
             ),
         )
     }

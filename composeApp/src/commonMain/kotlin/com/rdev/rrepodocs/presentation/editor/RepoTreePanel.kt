@@ -85,6 +85,7 @@ import io.ktor.http.HttpHeaders
 @Composable
 fun RepoTreePanel(
     repositoryName: String,
+    repositoryDefaultBranch: String,
     repositoryOwnerLogin: String,
     repositoryOwnerAvatarUrl: String?,
     activeDocumentPath: String?,
@@ -492,12 +493,16 @@ fun RepoTreePanel(
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text("Copy GitHub Path") },
+                    text = { Text("Copy GitHub Link") },
                     leadingIcon = { Icon(imageVector = Icons.Outlined.ContentCopy, contentDescription = null) },
-                    enabled = selectedIsFolder,
+                    enabled = selectedNode != null && !selectedIsFolder,
                     onClick = {
-                        if (selectedIsFolder) {
-                            copyTextToClipboard("$repositoryName/$selectedPath")
+                        if (selectedNode != null && !selectedIsFolder) {
+                            githubFileUrl(
+                                repositoryFullName = repositoryName,
+                                defaultBranch = repositoryDefaultBranch,
+                                path = selectedPath,
+                            )?.let(::copyTextToClipboard)
                         }
                         contextMenuPath = null
                         contextMenuPositionInRoot = null

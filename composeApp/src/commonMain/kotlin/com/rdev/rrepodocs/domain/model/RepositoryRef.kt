@@ -7,4 +7,5 @@ data class RepositoryRef(
     val ownerLogin: String,
     val ownerAvatarUrl: String?,
     val isPrivate: Boolean,
+    val defaultBranch: String = "HEAD",
 )

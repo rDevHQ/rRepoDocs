@@ -100,6 +100,7 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun WorkspaceScreen(
     repositoryName: String,
+    repositoryDefaultBranch: String,
     repositoryOwnerLogin: String,
     repositoryOwnerAvatarUrl: String?,
     viewerUsername: String?,
@@ -226,6 +227,7 @@ fun WorkspaceScreen(
         if (desktopLayout) {
             DesktopWorkspaceLayout(
                 repositoryName = repositoryName,
+                repositoryDefaultBranch = repositoryDefaultBranch,
                 repositoryOwnerLogin = repositoryOwnerLogin,
                 repositoryOwnerAvatarUrl = repositoryOwnerAvatarUrl,
                 viewerUsername = viewerUsername,
@@ -294,6 +296,7 @@ fun WorkspaceScreen(
         } else {
             MobileWorkspaceLayout(
                 repositoryName = repositoryName,
+                repositoryDefaultBranch = repositoryDefaultBranch,
                 repositoryOwnerLogin = repositoryOwnerLogin,
                 repositoryOwnerAvatarUrl = repositoryOwnerAvatarUrl,
                 viewerUsername = viewerUsername,
@@ -455,6 +458,7 @@ fun WorkspaceScreen(
 @Composable
 private fun DesktopWorkspaceLayout(
     repositoryName: String,
+    repositoryDefaultBranch: String,
     repositoryOwnerLogin: String,
     repositoryOwnerAvatarUrl: String?,
     viewerUsername: String?,
@@ -599,6 +603,7 @@ private fun DesktopWorkspaceLayout(
             if (sidebarVisible) {
             RepoTreePanel(
                 repositoryName = repositoryName,
+                repositoryDefaultBranch = repositoryDefaultBranch,
                 repositoryOwnerLogin = viewerUsername ?: repositoryOwnerLogin,
                 repositoryOwnerAvatarUrl = viewerIdentityAvatarUrl(
                     viewerAvatarUrl = viewerAvatarUrl,
@@ -686,6 +691,8 @@ private fun DesktopWorkspaceLayout(
                 RightContextPane(
                     mode = rightPaneMode,
                     onModeChanged = { rightPaneMode = it },
+                    repositoryName = repositoryName,
+                    repositoryDefaultBranch = repositoryDefaultBranch,
                     activeDocumentPath = activeDocumentPath,
                     markdown = editorContent,
                     documentIsDirty = documentIsDirty,
@@ -793,6 +800,7 @@ private fun viewerIdentityAvatarUrl(
 @Composable
 private fun MobileWorkspaceLayout(
     repositoryName: String,
+    repositoryDefaultBranch: String,
     repositoryOwnerLogin: String,
     repositoryOwnerAvatarUrl: String?,
     viewerUsername: String?,
@@ -925,6 +933,7 @@ private fun MobileWorkspaceLayout(
                 MobileWorkspaceTab.Explorer -> {
                     RepoTreePanel(
                         repositoryName = repositoryName,
+                        repositoryDefaultBranch = repositoryDefaultBranch,
                         repositoryOwnerLogin = identityLogin,
                         repositoryOwnerAvatarUrl = identityAvatarUrl,
                         activeDocumentPath = activeDocumentPath,
@@ -1547,6 +1556,8 @@ private fun MobileBottomNavItem(
 private fun RightContextPane(
     mode: RightPaneMode,
     onModeChanged: (RightPaneMode) -> Unit,
+    repositoryName: String,
+    repositoryDefaultBranch: String,
     activeDocumentPath: String?,
     markdown: String,
     documentIsDirty: Boolean,
@@ -1624,6 +1635,8 @@ private fun RightContextPane(
 
                 RightPaneMode.Info -> {
                     MarkdownFileInfoPanel(
+                        repositoryName = repositoryName,
+                        repositoryDefaultBranch = repositoryDefaultBranch,
                         activeDocumentPath = activeDocumentPath,
                         markdown = markdown,
                         isDirty = documentIsDirty,

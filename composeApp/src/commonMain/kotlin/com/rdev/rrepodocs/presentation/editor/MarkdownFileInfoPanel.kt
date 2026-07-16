@@ -28,6 +28,8 @@ import com.rdev.rrepodocs.presentation.app.AppThemeTokens
 
 @Composable
 fun MarkdownFileInfoPanel(
+    repositoryName: String,
+    repositoryDefaultBranch: String,
     activeDocumentPath: String?,
     markdown: String,
     isDirty: Boolean,
@@ -57,7 +59,14 @@ fun MarkdownFileInfoPanel(
                 InfoEmptyState()
             } else {
                 InfoSection("File") {
-                    InfoPathRow(activeDocumentPath)
+                    InfoPathRow(
+                        path = activeDocumentPath,
+                        githubUrl = githubFileUrl(
+                            repositoryFullName = repositoryName,
+                            defaultBranch = repositoryDefaultBranch,
+                            path = activeDocumentPath,
+                        ),
+                    )
                     InfoRow("Type", "Markdown")
                     InfoRow("Size", formatFileSize(markdown.encodeToByteArray().size))
                     InfoRow("Lines", markdown.lineSequence().count().toString())
@@ -80,7 +89,7 @@ fun MarkdownFileInfoPanel(
 }
 
 @Composable
-private fun InfoPathRow(path: String) {
+private fun InfoPathRow(path: String, githubUrl: String?) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = "Path",
@@ -108,6 +117,36 @@ private fun InfoPathRow(path: String) {
                     contentDescription = "Copy file path",
                     modifier = Modifier.size(18.dp),
                 )
+            }
+        }
+        githubUrl?.let { url ->
+            Text(
+                text = "GitHub link",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = url,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = { copyTextToClipboard(url) },
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.ContentCopy,
+                        contentDescription = "Copy GitHub link",
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
     }

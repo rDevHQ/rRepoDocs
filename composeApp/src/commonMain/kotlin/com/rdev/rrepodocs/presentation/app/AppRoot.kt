@@ -919,6 +919,7 @@ fun AppRoot() {
             AppMode.Workspace -> {
                 WorkspaceScreen(
                     repositoryName = appState.selectedRepository?.fullName ?: "Repository",
+                    repositoryDefaultBranch = appState.selectedRepository?.defaultBranch ?: "HEAD",
                     repositoryOwnerLogin = appState.selectedRepository?.ownerLogin ?: "GitHub",
                     repositoryOwnerAvatarUrl = appState.selectedRepository?.ownerAvatarUrl,
                     viewerUsername = appState.session?.username,
