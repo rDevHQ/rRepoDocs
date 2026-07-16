@@ -57,6 +57,14 @@ class GitHubTokenAuthRepository(
 
     override fun restoreSession(): UserSession? = secureSessionStorage.load()
 
+    override fun loadAccounts(): List<UserSession> = secureSessionStorage.loadAccounts()
+
+    override fun switchAccount(userId: String): UserSession? = secureSessionStorage.setActiveAccount(userId)
+
+    override fun removeAccount(userId: String) {
+        secureSessionStorage.removeAccount(userId)
+    }
+
     override fun signOut() {
         secureSessionStorage.clear()
     }

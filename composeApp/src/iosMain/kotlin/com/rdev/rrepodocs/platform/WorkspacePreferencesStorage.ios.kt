@@ -7,17 +7,26 @@ private const val LastRepositoryFullNameKey = "rrepodocs.last_repository_full_na
 private class IosWorkspacePreferencesStorage : WorkspacePreferencesStorage {
     private val defaults: NSUserDefaults = NSUserDefaults.standardUserDefaults
 
-    override fun loadLastRepositoryFullName(): String? {
-        return defaults.stringForKey(LastRepositoryFullNameKey)
-    }
-
-    override fun saveLastRepositoryFullName(fullName: String) {
-        defaults.setObject(fullName, forKey = LastRepositoryFullNameKey)
-    }
-
-    override fun clearLastRepositoryFullName() {
+    override fun loadLastRepositoryFullName(userId: String): String? {
+        val accountKey = accountKey(userId)
+        defaults.stringForKey(accountKey)?.let { return it }
+        val legacyValue = defaults.stringForKey(LastRepositoryFullNameKey) ?: return null
+        defaults.setObject(legacyValue, forKey = accountKey)
         defaults.removeObjectForKey(LastRepositoryFullNameKey)
+        return legacyValue
     }
+
+    override fun saveLastRepositoryFullName(userId: String, fullName: String) {
+        defaults.setObject(fullName, forKey = accountKey(userId))
+    }
+
+    override fun clearLastRepositoryFullName(userId: String) {
+        defaults.removeObjectForKey(accountKey(userId))
+    }
+
+    override fun clearAllLastRepositoryFullNames() { defaults.removeObjectForKey(LastRepositoryFullNameKey) }
+
+    private fun accountKey(userId: String) = "$LastRepositoryFullNameKey.$userId"
 }
 
 actual fun provideWorkspacePreferencesStorage(): WorkspacePreferencesStorage {

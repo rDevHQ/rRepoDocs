@@ -87,6 +87,7 @@ import com.rdev.rrepodocs.domain.model.DocumentShare
 import com.rdev.rrepodocs.domain.model.RepoTreeNode
 import com.rdev.rrepodocs.domain.model.RepoTreeNodeKind
 import com.rdev.rrepodocs.domain.model.ShareExpiryOption
+import com.rdev.rrepodocs.domain.model.UserSession
 import com.rdev.rrepodocs.platform.copyTextToClipboard
 import com.rdev.rrepodocs.platform.openExternalUrl
 import com.rdev.rrepodocs.platform.setPreviewScreenAwake
@@ -106,6 +107,7 @@ fun WorkspaceScreen(
     viewerUsername: String?,
     viewerUserId: String?,
     viewerAvatarUrl: String?,
+    savedAccounts: List<UserSession>,
     showNonMarkdownFiles: Boolean,
     treeRoots: List<RepoTreeNode>,
     expandedFolderPaths: Set<String>,
@@ -215,6 +217,8 @@ fun WorkspaceScreen(
     onDiscardUnsavedAndOpenPending: () -> Unit,
     onKeepEditingCurrent: () -> Unit,
     onBackToRepositories: () -> Unit,
+    onSwitchAccount: (String) -> Unit,
+    onAddAccount: () -> Unit,
     onSignOut: () -> Unit,
 ) {
     var sourceNavigation by remember { mutableStateOf<EditorSourceNavigation?>(null) }
@@ -302,6 +306,7 @@ fun WorkspaceScreen(
                 viewerUsername = viewerUsername,
                 viewerUserId = viewerUserId,
                 viewerAvatarUrl = viewerAvatarUrl,
+                savedAccounts = savedAccounts,
                 showNonMarkdownFiles = showNonMarkdownFiles,
                 treeRoots = treeRoots,
                 expandedFolderPaths = expandedFolderPaths,
@@ -356,6 +361,8 @@ fun WorkspaceScreen(
                 onDiscardUnsavedAndOpenPending = onDiscardUnsavedAndOpenPending,
                 onKeepEditingCurrent = onKeepEditingCurrent,
                 onBackToRepositories = onBackToRepositories,
+                onSwitchAccount = onSwitchAccount,
+                onAddAccount = onAddAccount,
                 onSignOut = onSignOut,
                 sourceNavigation = sourceNavigation,
                 onPreviewSourceSelected = { offset ->
@@ -809,6 +816,7 @@ private fun MobileWorkspaceLayout(
     viewerUsername: String?,
     viewerUserId: String?,
     viewerAvatarUrl: String?,
+    savedAccounts: List<UserSession>,
     showNonMarkdownFiles: Boolean,
     treeRoots: List<RepoTreeNode>,
     expandedFolderPaths: Set<String>,
@@ -863,6 +871,8 @@ private fun MobileWorkspaceLayout(
     onDiscardUnsavedAndOpenPending: () -> Unit,
     onKeepEditingCurrent: () -> Unit,
     onBackToRepositories: () -> Unit,
+    onSwitchAccount: (String) -> Unit,
+    onAddAccount: () -> Unit,
     onSignOut: () -> Unit,
     sourceNavigation: EditorSourceNavigation?,
     onPreviewSourceSelected: (Int) -> Unit,
@@ -1039,12 +1049,16 @@ private fun MobileWorkspaceLayout(
                         displayRepositoryName = displayRepositoryName,
                         identityLogin = identityLogin,
                         identityAvatarUrl = identityAvatarUrl,
+                        savedAccounts = savedAccounts,
+                        activeUserId = viewerUserId,
                         showNonMarkdownFiles = showNonMarkdownFiles,
                         canShareDocument = activeDocumentPath != null && !documentLoading && !shareInProgress,
                         onStartShareDocument = onStartShareDocument,
                         onStartSharedLinks = onStartSharedLinks,
                         onToggleShowNonMarkdownFiles = onToggleShowNonMarkdownFiles,
                         onBackToRepositories = onBackToRepositories,
+                        onSwitchAccount = onSwitchAccount,
+                        onAddAccount = onAddAccount,
                         onSignOut = onSignOut,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -1299,12 +1313,16 @@ private fun MobileAccountScreen(
     displayRepositoryName: String,
     identityLogin: String,
     identityAvatarUrl: String?,
+    savedAccounts: List<UserSession>,
+    activeUserId: String?,
     showNonMarkdownFiles: Boolean,
     canShareDocument: Boolean,
     onStartShareDocument: () -> Unit,
     onStartSharedLinks: () -> Unit,
     onToggleShowNonMarkdownFiles: () -> Unit,
     onBackToRepositories: () -> Unit,
+    onSwitchAccount: (String) -> Unit,
+    onAddAccount: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1363,6 +1381,20 @@ private fun MobileAccountScreen(
                 icon = Icons.Outlined.SwapHoriz,
                 label = "Change repository",
                 onClick = onBackToRepositories,
+            )
+            savedAccounts
+                .filter { account -> account.userId != activeUserId }
+                .forEach { account ->
+                    MobileAccountAction(
+                        icon = Icons.Outlined.SwapHoriz,
+                        label = "Switch to ${account.username}",
+                        onClick = { onSwitchAccount(account.userId) },
+                    )
+                }
+            MobileAccountAction(
+                icon = Icons.Outlined.SwapHoriz,
+                label = "Add GitHub account",
+                onClick = onAddAccount,
             )
             MobileAccountAction(
                 icon = Icons.Outlined.Settings,

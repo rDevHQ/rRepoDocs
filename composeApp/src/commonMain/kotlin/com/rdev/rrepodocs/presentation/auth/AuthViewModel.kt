@@ -38,6 +38,14 @@ class AuthViewModel(
         return restoredSession
     }
 
+    fun loadAccounts(): List<UserSession> = authRepository.loadAccounts()
+
+    fun switchAccount(userId: String): UserSession? {
+        val session = authRepository.switchAccount(userId)
+        authState = if (session == null) AuthState.SignedOut else AuthState.SignedIn(session)
+        return session
+    }
+
     suspend fun startDeviceSignIn(): Boolean {
         val clientId = configuredClientId?.trim().orEmpty()
         if (clientId.isBlank()) {

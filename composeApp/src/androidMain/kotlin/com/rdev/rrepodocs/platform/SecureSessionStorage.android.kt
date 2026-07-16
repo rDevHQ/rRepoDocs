@@ -40,21 +40,49 @@ private class AndroidSecureSessionStorage(
         // Fallback keeps persistence available if encrypted preferences cannot initialize.
         context.getSharedPreferences(SessionPrefsFile, Context.MODE_PRIVATE)
     }
+    private val serialized = sessionPreferences.getString(SessionKey, null)
+    private val storedAccounts = serialized?.let(::decodeStoredAccounts)
+    private var accounts = (storedAccounts?.accounts ?: serialized?.let(::decodeUserSession)?.let(::listOf).orEmpty())
+        .toMutableList()
+    private var activeUserId = storedAccounts?.activeUserId ?: accounts.firstOrNull()?.userId
 
-    override fun load(): UserSession? {
-        val serialized = sessionPreferences.getString(SessionKey, null) ?: return null
-        return decodeUserSession(serialized)
+    init {
+        if (serialized != null && storedAccounts == null && accounts.isNotEmpty()) persist()
     }
 
+    override fun load(): UserSession? = accounts.firstOrNull { it.userId == activeUserId }
+
     override fun save(session: UserSession) {
-        sessionPreferences.edit()
-            .putString(SessionKey, encodeUserSession(session))
-            .apply()
+        accounts.removeAll { it.userId == session.userId }
+        accounts.add(session)
+        activeUserId = session.userId
+        persist()
+    }
+
+    override fun loadAccounts(): List<UserSession> = accounts.toList()
+
+    override fun setActiveAccount(userId: String): UserSession? {
+        val account = accounts.firstOrNull { it.userId == userId } ?: return null
+        activeUserId = userId
+        persist()
+        return account
+    }
+
+    override fun removeAccount(userId: String) {
+        accounts.removeAll { it.userId == userId }
+        if (activeUserId == userId) activeUserId = accounts.firstOrNull()?.userId
+        persist()
     }
 
     override fun clear() {
+        accounts.clear()
+        activeUserId = null
+        persist()
+    }
+
+    private fun persist() {
         sessionPreferences.edit()
-            .remove(SessionKey)
+            .putString(SessionKey, encodeStoredAccounts(accounts, activeUserId))
             .apply()
     }
 }

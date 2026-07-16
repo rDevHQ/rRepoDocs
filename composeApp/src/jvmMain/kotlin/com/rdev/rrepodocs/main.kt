@@ -132,8 +132,22 @@ fun main() {
                         onClick = { DesktopMenuBridge.onOpenGitHubProfile?.invoke() },
                     )
                     Separator()
+                    Menu("Switch GitHub Account") {
+                        DesktopMenuBridge.accounts.forEach { account ->
+                            Item(
+                                text = account.username,
+                                enabled = account.userId != DesktopMenuBridge.activeAccountId,
+                                onClick = { DesktopMenuBridge.onSwitchAccount?.invoke(account.userId) },
+                            )
+                        }
+                    }
                     Item(
-                        text = "Switch GitHub Account...",
+                        text = "Add GitHub Account...",
+                        onClick = { DesktopMenuBridge.onAddAccount?.invoke() },
+                    )
+                    Separator()
+                    Item(
+                        text = "Sign Out of All Accounts",
                         enabled = DesktopMenuBridge.isSignedIn,
                         onClick = { DesktopMenuBridge.onSignOut?.invoke() },
                     )
