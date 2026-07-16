@@ -3,6 +3,7 @@ package com.rdev.rrepodocs.presentation.app
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.rdev.rrepodocs.domain.model.UserSession
 
 object DesktopMenuBridge {
     var canCopyFile by mutableStateOf(false)
@@ -14,6 +15,8 @@ object DesktopMenuBridge {
     var canShareDocument by mutableStateOf(false)
     var isSignedIn by mutableStateOf(false)
     var githubProfileUrl by mutableStateOf<String?>(null)
+    var accounts by mutableStateOf<List<UserSession>>(emptyList())
+    var activeAccountId by mutableStateOf<String?>(null)
     var showNonMarkdownFiles by mutableStateOf(false)
     var inWorkspace by mutableStateOf(false)
 
@@ -26,6 +29,8 @@ object DesktopMenuBridge {
     var onShareDocument: (() -> Unit)? = null
     var onShowSharedLinks: (() -> Unit)? = null
     var onSwitchRepository: (() -> Unit)? = null
+    var onSwitchAccount: ((String) -> Unit)? = null
+    var onAddAccount: (() -> Unit)? = null
     var onOpenGitHubProfile: (() -> Unit)? = null
     var onSignOut: (() -> Unit)? = null
     var onToggleShowNonMarkdownFiles: (() -> Unit)? = null

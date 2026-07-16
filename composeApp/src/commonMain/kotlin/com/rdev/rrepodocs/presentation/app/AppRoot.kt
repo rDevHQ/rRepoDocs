@@ -185,11 +185,19 @@ fun AppRoot() {
         DesktopMenuBridge.onShareDocument = { appViewModel.requestShowShareDialog() }
         DesktopMenuBridge.onShowSharedLinks = { appViewModel.requestShowSharedLinksDialog() }
         DesktopMenuBridge.onSwitchRepository = { appViewModel.openRepositoryPicker() }
+        DesktopMenuBridge.onSwitchAccount = { userId ->
+            authViewModel.switchAccount(userId)?.let(appViewModel::onSignedIn)
+        }
+        DesktopMenuBridge.onAddAccount = {
+            appViewModel.signOut()
+        }
         DesktopMenuBridge.onOpenGitHubProfile = {
             DesktopMenuBridge.githubProfileUrl?.let(::openExternalUrl)
         }
         DesktopMenuBridge.onSignOut = {
-            workspacePreferencesStorage.clearLastRepositoryFullName()
+            authViewModel.loadAccounts().forEach { account ->
+                workspacePreferencesStorage.clearLastRepositoryFullName(account.userId)
+            }
             authViewModel.signOut()
             appViewModel.signOut()
         }
@@ -205,6 +213,8 @@ fun AppRoot() {
             DesktopMenuBridge.onShareDocument = null
             DesktopMenuBridge.onShowSharedLinks = null
             DesktopMenuBridge.onSwitchRepository = null
+            DesktopMenuBridge.onSwitchAccount = null
+            DesktopMenuBridge.onAddAccount = null
             DesktopMenuBridge.onOpenGitHubProfile = null
             DesktopMenuBridge.onSignOut = null
             DesktopMenuBridge.onToggleShowNonMarkdownFiles = null
@@ -249,6 +259,8 @@ fun AppRoot() {
             !appState.documentLoading &&
             !appState.shareInProgress
         DesktopMenuBridge.isSignedIn = appState.session != null
+        DesktopMenuBridge.accounts = authViewModel.loadAccounts()
+        DesktopMenuBridge.activeAccountId = appState.session?.userId
         DesktopMenuBridge.githubProfileUrl = appState.session?.username
             ?.takeIf { it.isNotBlank() }
             ?.let { "https://github.com/$it" }
@@ -297,7 +309,8 @@ fun AppRoot() {
         }
         restoredRepositoryForSession = session.accessToken
 
-        val lastFullName = workspacePreferencesStorage.loadLastRepositoryFullName() ?: return@LaunchedEffect
+        val lastFullName = workspacePreferencesStorage.loadLastRepositoryFullName(session.userId)
+            ?: return@LaunchedEffect
         val matchingRepository = appState.repositoryOptions.firstOrNull { repo ->
             repo.fullName == lastFullName
         } ?: return@LaunchedEffect
@@ -878,9 +891,10 @@ fun AppRoot() {
         )
     }
 
-    LaunchedEffect(appState.selectedRepository?.fullName) {
+    LaunchedEffect(appState.session?.userId, appState.selectedRepository?.fullName) {
+        val userId = appState.session?.userId ?: return@LaunchedEffect
         val selectedFullName = appState.selectedRepository?.fullName ?: return@LaunchedEffect
-        workspacePreferencesStorage.saveLastRepositoryFullName(selectedFullName)
+        workspacePreferencesStorage.saveLastRepositoryFullName(userId, selectedFullName)
     }
 
     RRepoDocsTheme {
@@ -917,7 +931,9 @@ fun AppRoot() {
                     onRepositorySelected = appViewModel::selectRepository,
                     onRetry = appViewModel::retryRepositoryLoad,
                     onSignOut = {
-                        workspacePreferencesStorage.clearLastRepositoryFullName()
+                        authViewModel.loadAccounts().forEach { account ->
+                            workspacePreferencesStorage.clearLastRepositoryFullName(account.userId)
+                        }
                         authViewModel.signOut()
                         appViewModel.signOut()
                     },
@@ -933,6 +949,7 @@ fun AppRoot() {
                     viewerUsername = appState.session?.username,
                     viewerUserId = appState.session?.userId,
                     viewerAvatarUrl = appState.session?.avatarUrl,
+                    savedAccounts = authViewModel.loadAccounts(),
                     showNonMarkdownFiles = appState.showNonMarkdownFiles,
                     treeRoots = appState.repoTreeRoots,
                     expandedFolderPaths = appState.expandedFolderPaths,
@@ -1042,8 +1059,14 @@ fun AppRoot() {
                     onDiscardUnsavedAndOpenPending = appViewModel::discardUnsavedAndOpenPendingDocument,
                     onKeepEditingCurrent = appViewModel::keepEditingCurrentDocument,
                     onBackToRepositories = appViewModel::openRepositoryPicker,
+                    onSwitchAccount = { userId ->
+                        authViewModel.switchAccount(userId)?.let(appViewModel::onSignedIn)
+                    },
+                    onAddAccount = appViewModel::signOut,
                     onSignOut = {
-                        workspacePreferencesStorage.clearLastRepositoryFullName()
+                        authViewModel.loadAccounts().forEach { account ->
+                            workspacePreferencesStorage.clearLastRepositoryFullName(account.userId)
+                        }
                         authViewModel.signOut()
                         appViewModel.signOut()
                     },

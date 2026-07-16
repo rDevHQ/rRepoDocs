@@ -14,21 +14,31 @@ private class AndroidWorkspacePreferencesStorage(
         Context.MODE_PRIVATE,
     )
 
-    override fun loadLastRepositoryFullName(): String? {
-        return preferences.getString(LastRepositoryFullNameKey, null)
+    override fun loadLastRepositoryFullName(userId: String): String? {
+        val accountKey = accountKey(userId)
+        preferences.getString(accountKey, null)?.let { return it }
+        val legacyValue = preferences.getString(LastRepositoryFullNameKey, null) ?: return null
+        preferences.edit().putString(accountKey, legacyValue).remove(LastRepositoryFullNameKey).apply()
+        return legacyValue
     }
 
-    override fun saveLastRepositoryFullName(fullName: String) {
+    override fun saveLastRepositoryFullName(userId: String, fullName: String) {
         preferences.edit()
-            .putString(LastRepositoryFullNameKey, fullName)
+            .putString(accountKey(userId), fullName)
             .apply()
     }
 
-    override fun clearLastRepositoryFullName() {
+    override fun clearLastRepositoryFullName(userId: String) {
         preferences.edit()
-            .remove(LastRepositoryFullNameKey)
+            .remove(accountKey(userId))
             .apply()
     }
+
+    override fun clearAllLastRepositoryFullNames() {
+        preferences.edit().clear().apply()
+    }
+
+    private fun accountKey(userId: String) = "$LastRepositoryFullNameKey.$userId"
 }
 
 actual fun provideWorkspacePreferencesStorage(): WorkspacePreferencesStorage {
@@ -39,15 +49,17 @@ actual fun provideWorkspacePreferencesStorage(): WorkspacePreferencesStorage {
         object : WorkspacePreferencesStorage {
             private var lastRepositoryFullName: String? = null
 
-            override fun loadLastRepositoryFullName(): String? = lastRepositoryFullName
+            override fun loadLastRepositoryFullName(userId: String): String? = lastRepositoryFullName
 
-            override fun saveLastRepositoryFullName(fullName: String) {
+            override fun saveLastRepositoryFullName(userId: String, fullName: String) {
                 lastRepositoryFullName = fullName
             }
 
-            override fun clearLastRepositoryFullName() {
+            override fun clearLastRepositoryFullName(userId: String) {
                 lastRepositoryFullName = null
             }
+
+            override fun clearAllLastRepositoryFullNames() { lastRepositoryFullName = null }
         }
     }
 }
