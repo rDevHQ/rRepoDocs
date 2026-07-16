@@ -43,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -100,6 +101,7 @@ fun MarkdownEditorPanel(
     }
     val editorScroll = rememberScrollState()
     val editorFocusRequester = remember { FocusRequester() }
+    val latestOnScrollProgressChanged by rememberUpdatedState(onScrollProgressChanged)
     val editorState = remember(activeDocumentPath) { TextFieldState(content) }
     val editHistory = remember(activeDocumentPath) { MarkdownEditHistory() }
     val historyValue = remember(activeDocumentPath) { TextFieldValueMemory(editorState.asTextFieldValue()) }
@@ -141,7 +143,7 @@ fun MarkdownEditorPanel(
     LaunchedEffect(editorScroll) {
         snapshotFlow {
             if (editorScroll.maxValue == 0) 0f else editorScroll.value.toFloat() / editorScroll.maxValue
-        }.collect(onScrollProgressChanged)
+        }.collect { latestOnScrollProgressChanged(it) }
     }
 
     LaunchedEffect(sourceNavigation?.requestId) {
