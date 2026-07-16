@@ -682,6 +682,7 @@ private fun DesktopWorkspaceLayout(
                     onModeChanged = { rightPaneMode = it },
                     activeDocumentPath = activeDocumentPath,
                     markdown = editorContent,
+                    documentIsDirty = documentIsDirty,
                     historyEntries = documentHistoryEntries,
                     historyLoading = documentHistoryLoading,
                     historyError = documentHistoryError,
@@ -766,6 +767,7 @@ private enum class MobileWorkspaceTab {
 private enum class RightPaneMode {
     Preview,
     History,
+    Info,
 }
 
 private fun viewerIdentityAvatarUrl(
@@ -1520,6 +1522,7 @@ private fun RightContextPane(
     onModeChanged: (RightPaneMode) -> Unit,
     activeDocumentPath: String?,
     markdown: String,
+    documentIsDirty: Boolean,
     historyEntries: List<DocumentHistoryEntry>,
     historyLoading: Boolean,
     historyError: String?,
@@ -1591,6 +1594,18 @@ private fun RightContextPane(
                             .padding(horizontal = 22.dp, vertical = 18.dp),
                     )
                 }
+
+                RightPaneMode.Info -> {
+                    MarkdownFileInfoPanel(
+                        activeDocumentPath = activeDocumentPath,
+                        markdown = markdown,
+                        isDirty = documentIsDirty,
+                        latestHistoryEntry = historyEntries.firstOrNull(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 22.dp, vertical = 18.dp),
+                    )
+                }
             }
         }
     }
@@ -1617,6 +1632,11 @@ private fun RightPaneTabHeader(
             label = "History",
             active = mode == RightPaneMode.History,
             onClick = { onModeChanged(RightPaneMode.History) },
+        )
+        RightPaneTabButton(
+            label = "Info",
+            active = mode == RightPaneMode.Info,
+            onClick = { onModeChanged(RightPaneMode.Info) },
         )
     }
 }
