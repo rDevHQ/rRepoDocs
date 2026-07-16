@@ -212,6 +212,7 @@ fun WorkspaceScreen(
     onBackToRepositories: () -> Unit,
     onSignOut: () -> Unit,
 ) {
+    var sourceNavigation by remember { mutableStateOf<EditorSourceNavigation?>(null) }
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -278,8 +279,10 @@ fun WorkspaceScreen(
                 onRetryDocumentHistory = onRetryDocumentHistory,
                 onDiscardUnsavedAndOpenPending = onDiscardUnsavedAndOpenPending,
                 onKeepEditingCurrent = onKeepEditingCurrent,
-                onBackToRepositories = onBackToRepositories,
-                onSignOut = onSignOut,
+                sourceNavigation = sourceNavigation,
+                onPreviewSourceSelected = { offset ->
+                    sourceNavigation = EditorSourceNavigation(offset, (sourceNavigation?.requestId ?: 0) + 1)
+                },
             )
         } else {
             MobileWorkspaceLayout(
@@ -341,6 +344,10 @@ fun WorkspaceScreen(
                 onKeepEditingCurrent = onKeepEditingCurrent,
                 onBackToRepositories = onBackToRepositories,
                 onSignOut = onSignOut,
+                sourceNavigation = sourceNavigation,
+                onPreviewSourceSelected = { offset ->
+                    sourceNavigation = EditorSourceNavigation(offset, (sourceNavigation?.requestId ?: 0) + 1)
+                },
             )
         }
 
@@ -495,11 +502,12 @@ private fun DesktopWorkspaceLayout(
     onRetryDocumentHistory: () -> Unit,
     onDiscardUnsavedAndOpenPending: () -> Unit,
     onKeepEditingCurrent: () -> Unit,
-    onBackToRepositories: () -> Unit,
-    onSignOut: () -> Unit,
+    sourceNavigation: EditorSourceNavigation?,
+    onPreviewSourceSelected: (Int) -> Unit,
 ) {
     var rightPaneMode by rememberSaveable { mutableStateOf(RightPaneMode.Preview) }
     var sidebarVisible by rememberSaveable { mutableStateOf(true) }
+    var rightPaneVisible by rememberSaveable { mutableStateOf(true) }
     var leftPaneRatio by rememberSaveable { mutableStateOf(0.15f) }
     var rightPaneRatio by rememberSaveable { mutableStateOf(0.19f) }
     Column(
@@ -542,19 +550,9 @@ private fun DesktopWorkspaceLayout(
             repositoryName = repositoryName,
             repositoryOwnerLogin = viewerUsername ?: repositoryOwnerLogin,
             sidebarVisible = sidebarVisible,
-            showNonMarkdownFiles = showNonMarkdownFiles,
-            canCopyMarkdownFile = selectedMarkdownPath != null || activeDocumentPath != null,
-            copiedMarkdownPath = copiedMarkdownPath,
-            pasteInProgress = pasteInProgress,
-            canShareDocument = activeDocumentPath != null && !documentLoading && !shareInProgress,
-            onCopyMarkdownFile = { onCopyMarkdownFile(null) },
-            onPasteMarkdownFile = { onPasteMarkdownFile(null) },
-            onStartShareDocument = onStartShareDocument,
-            onStartSharedLinks = onStartSharedLinks,
-            onToggleShowNonMarkdownFiles = onToggleShowNonMarkdownFiles,
+            rightPaneVisible = rightPaneVisible,
             onToggleSidebar = { sidebarVisible = !sidebarVisible },
-            onBackToRepositories = onBackToRepositories,
-            onSignOut = onSignOut,
+            onToggleRightPane = { rightPaneVisible = !rightPaneVisible },
         )
         BoxWithConstraints(
             modifier = Modifier
@@ -567,15 +565,21 @@ private fun DesktopWorkspaceLayout(
             val minLeft = 0.11f
             val minCenter = 0.30f
             val minRight = 0.14f
-            val splitterCount = if (sidebarVisible) 2 else 1
+            val splitterCount = (if (sidebarVisible) 1 else 0) + (if (rightPaneVisible) 1 else 0)
             val contentWidthPx = (with(density) { maxWidth.toPx() } - (splitterWidthPx * splitterCount)).coerceAtLeast(1f)
 
-            leftPaneRatio = leftPaneRatio.coerceIn(minLeft, 1f - rightPaneRatio - minCenter)
-            rightPaneRatio = rightPaneRatio.coerceIn(minRight, 1f - leftPaneRatio - minCenter)
+            if (sidebarVisible) {
+                val maxLeft = 1f - (if (rightPaneVisible) rightPaneRatio else 0f) - minCenter
+                leftPaneRatio = leftPaneRatio.coerceIn(minLeft, maxLeft)
+            }
+            if (rightPaneVisible) {
+                val maxRight = if (sidebarVisible) 1f - leftPaneRatio - minCenter else 1f - minCenter
+                rightPaneRatio = rightPaneRatio.coerceIn(minRight, maxRight)
+            }
 
             val leftWidthDp = with(density) { (contentWidthPx * leftPaneRatio).toDp() }
             val rightWidthDp = with(density) { (contentWidthPx * rightPaneRatio).toDp() }
-            val centerRatio = if (sidebarVisible) 1f - leftPaneRatio - rightPaneRatio else 1f - rightPaneRatio
+            val centerRatio = 1f - (if (sidebarVisible) leftPaneRatio else 0f) - (if (rightPaneVisible) rightPaneRatio else 0f)
             val centerWidthDp = with(density) { (contentWidthPx * centerRatio).toDp() }
 
             Row(modifier = Modifier.fillMaxSize()) {
@@ -652,28 +656,32 @@ private fun DesktopWorkspaceLayout(
                 onRetryOpenDocument = onRetryDocumentOpen,
                 onDiscardUnsavedAndOpenPending = onDiscardUnsavedAndOpenPending,
                 onKeepEditingCurrent = onKeepEditingCurrent,
+                sourceNavigation = sourceNavigation,
             )
-            PaneSplitter(
-                width = splitterWidthDp,
-                onDragDeltaX = { deltaX ->
-                    val deltaRatio = deltaX / contentWidthPx
-                    val maxRight = if (sidebarVisible) 1f - leftPaneRatio - minCenter else 1f - minCenter
-                    rightPaneRatio = (rightPaneRatio - deltaRatio).coerceIn(minRight, maxRight)
-                },
-            )
-            RightContextPane(
-                mode = rightPaneMode,
-                onModeChanged = { rightPaneMode = it },
-                activeDocumentPath = activeDocumentPath,
-                markdown = editorContent,
-                historyEntries = documentHistoryEntries,
-                historyLoading = documentHistoryLoading,
-                historyError = documentHistoryError,
-                onRetryHistory = onRetryDocumentHistory,
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(rightWidthDp),
-            )
+            if (rightPaneVisible) {
+                PaneSplitter(
+                    width = splitterWidthDp,
+                    onDragDeltaX = { deltaX ->
+                        val deltaRatio = deltaX / contentWidthPx
+                        val maxRight = if (sidebarVisible) 1f - leftPaneRatio - minCenter else 1f - minCenter
+                        rightPaneRatio = (rightPaneRatio - deltaRatio).coerceIn(minRight, maxRight)
+                    },
+                )
+                RightContextPane(
+                    mode = rightPaneMode,
+                    onModeChanged = { rightPaneMode = it },
+                    activeDocumentPath = activeDocumentPath,
+                    markdown = editorContent,
+                    historyEntries = documentHistoryEntries,
+                    historyLoading = documentHistoryLoading,
+                    historyError = documentHistoryError,
+                    onRetryHistory = onRetryDocumentHistory,
+                    onPreviewSourceSelected = onPreviewSourceSelected,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(rightWidthDp),
+                )
+            }
         }
         }
     }
@@ -824,6 +832,8 @@ private fun MobileWorkspaceLayout(
     onKeepEditingCurrent: () -> Unit,
     onBackToRepositories: () -> Unit,
     onSignOut: () -> Unit,
+    sourceNavigation: EditorSourceNavigation?,
+    onPreviewSourceSelected: (Int) -> Unit,
 ) {
     var activeTab by rememberSaveable { mutableStateOf(MobileWorkspaceTab.Explorer) }
     var editorHasFocus by rememberSaveable { mutableStateOf(false) }
@@ -950,6 +960,7 @@ private fun MobileWorkspaceLayout(
                         onKeepEditingCurrent = onKeepEditingCurrent,
                         showChrome = false,
                         onEditorFocusChanged = { editorHasFocus = it },
+                        sourceNavigation = sourceNavigation,
                         contentHorizontalPadding = 28.dp,
                         contentVerticalPadding = 30.dp,
                         modifier = Modifier.fillMaxSize(),
@@ -960,6 +971,10 @@ private fun MobileWorkspaceLayout(
                     MarkdownPreviewPanel(
                         markdown = editorContent,
                         showTitle = false,
+                        onNavigateToSource = { offset ->
+                            onPreviewSourceSelected(offset)
+                            activeTab = MobileWorkspaceTab.Editor
+                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 18.dp, vertical = 16.dp),
@@ -1495,6 +1510,7 @@ private fun RightContextPane(
     historyLoading: Boolean,
     historyError: String?,
     onRetryHistory: () -> Unit,
+    onPreviewSourceSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val paneShape = RoundedCornerShape(
@@ -1541,6 +1557,7 @@ private fun RightContextPane(
                         MarkdownPreviewPanel(
                             markdown = markdown,
                             showTitle = false,
+                            onNavigateToSource = onPreviewSourceSelected,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 22.dp, vertical = 18.dp),
@@ -2392,21 +2409,10 @@ private fun WorkspaceHeader(
     repositoryName: String,
     repositoryOwnerLogin: String,
     sidebarVisible: Boolean,
-    showNonMarkdownFiles: Boolean,
-    canCopyMarkdownFile: Boolean,
-    canShareDocument: Boolean,
-    copiedMarkdownPath: String?,
-    pasteInProgress: Boolean,
-    onCopyMarkdownFile: (() -> Unit),
-    onPasteMarkdownFile: (() -> Unit),
-    onStartShareDocument: () -> Unit,
-    onStartSharedLinks: () -> Unit,
-    onToggleShowNonMarkdownFiles: (() -> Unit),
+    rightPaneVisible: Boolean,
     onToggleSidebar: () -> Unit,
-    onBackToRepositories: () -> Unit,
-    onSignOut: () -> Unit,
+    onToggleRightPane: () -> Unit,
 ) {
-    var actionMenuExpanded by rememberSaveable { mutableStateOf(false) }
     val repositoryLabel = "$repositoryOwnerLogin → ${repositoryName.substringAfterLast('/')}"
 
     Surface(
@@ -2450,106 +2456,13 @@ private fun WorkspaceHeader(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            Box {
-                IconButton(
-                    onClick = { actionMenuExpanded = true },
-                    modifier = Modifier.size(34.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.MoreHoriz,
-                        contentDescription = "File actions",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                DropdownMenu(
-                    expanded = actionMenuExpanded,
-                    onDismissRequest = { actionMenuExpanded = false },
-                    shape = RoundedCornerShape(8.dp),
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Share public preview") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Outlined.Share, contentDescription = null)
-                        },
-                        enabled = canShareDocument,
-                        onClick = {
-                            actionMenuExpanded = false
-                            onStartShareDocument()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Shared public links") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Outlined.Visibility, contentDescription = null)
-                        },
-                        onClick = {
-                            actionMenuExpanded = false
-                            onStartSharedLinks()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Copy file  ⌘/Ctrl+Shift+C") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Outlined.ContentCopy, contentDescription = null)
-                        },
-                        enabled = canCopyMarkdownFile,
-                        onClick = {
-                            actionMenuExpanded = false
-                            onCopyMarkdownFile()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Paste file  ⌘/Ctrl+Shift+V") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Outlined.ContentPaste, contentDescription = null)
-                        },
-                        enabled = !copiedMarkdownPath.isNullOrBlank() && !pasteInProgress,
-                        onClick = {
-                            actionMenuExpanded = false
-                            onPasteMarkdownFile()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                if (showNonMarkdownFiles) {
-                                    "Hide non-markdown files"
-                                } else {
-                                    "Show non-markdown files"
-                                },
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Outlined.Settings, contentDescription = null)
-                        },
-                        onClick = {
-                            actionMenuExpanded = false
-                            onToggleShowNonMarkdownFiles()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Repository: $repositoryName") },
-                        onClick = { actionMenuExpanded = false },
-                    )
-                }
-            }
             IconButton(
-                onClick = onBackToRepositories,
+                onClick = onToggleRightPane,
                 modifier = Modifier.size(34.dp),
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.SwapHoriz,
-                    contentDescription = "Switch repository",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            IconButton(
-                onClick = onSignOut,
-                modifier = Modifier.size(34.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Logout,
-                    contentDescription = "Sign out",
+                    imageVector = Icons.Outlined.Visibility,
+                    contentDescription = if (rightPaneVisible) "Hide preview" else "Show preview",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

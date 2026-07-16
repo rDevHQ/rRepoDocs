@@ -68,6 +68,23 @@ fun main() {
             MenuBar {
                 Menu("File") {
                     Item(
+                        text = "Switch Repository...",
+                        enabled = DesktopMenuBridge.inWorkspace,
+                        onClick = { DesktopMenuBridge.onSwitchRepository?.invoke() },
+                    )
+                    Separator()
+                    Item(
+                        text = "Share Public Preview...",
+                        enabled = DesktopMenuBridge.inWorkspace && DesktopMenuBridge.canShareDocument,
+                        onClick = { DesktopMenuBridge.onShareDocument?.invoke() },
+                    )
+                    Item(
+                        text = "Shared Public Links...",
+                        enabled = DesktopMenuBridge.inWorkspace,
+                        onClick = { DesktopMenuBridge.onShowSharedLinks?.invoke() },
+                    )
+                    Separator()
+                    Item(
                         text = "Import Markdown...",
                         enabled = DesktopMenuBridge.inWorkspace && DesktopMenuBridge.canImportFile,
                         onClick = { DesktopMenuBridge.onImportFile?.invoke() },
@@ -77,19 +94,17 @@ fun main() {
                         enabled = DesktopMenuBridge.inWorkspace && DesktopMenuBridge.canExportFile,
                         onClick = { DesktopMenuBridge.onExportFile?.invoke() },
                     )
+                    Item(
+                        text = "Download as PDF...",
+                        enabled = DesktopMenuBridge.inWorkspace && DesktopMenuBridge.canExportPdf,
+                        onClick = { DesktopMenuBridge.onExportPdf?.invoke() },
+                    )
+                    Item(
+                        text = "Print Preview...",
+                        enabled = DesktopMenuBridge.inWorkspace && DesktopMenuBridge.canPrintPreview,
+                        onClick = { DesktopMenuBridge.onPrintPreview?.invoke() },
+                    )
                     Separator()
-                    Item(
-                        text = "Copy File",
-                        enabled = DesktopMenuBridge.inWorkspace && DesktopMenuBridge.canCopyFile,
-                        onClick = { DesktopMenuBridge.onCopyFile?.invoke() },
-                    )
-                    Item(
-                        text = "Paste File",
-                        enabled = DesktopMenuBridge.inWorkspace && DesktopMenuBridge.canPasteFile,
-                        onClick = { DesktopMenuBridge.onPasteFile?.invoke() },
-                    )
-                }
-                Menu("Edit") {
                     Item(
                         text = "Copy File",
                         enabled = DesktopMenuBridge.inWorkspace && DesktopMenuBridge.canCopyFile,
@@ -109,12 +124,18 @@ fun main() {
                         onCheckedChange = { DesktopMenuBridge.onToggleShowNonMarkdownFiles?.invoke() },
                     )
                 }
+                Menu("rRepoDocs") {
+                    Item(
+                        text = "Log Out",
+                        enabled = DesktopMenuBridge.isSignedIn,
+                        onClick = { DesktopMenuBridge.onSignOut?.invoke() },
+                    )
+                }
                 Menu("Window") {}
                 Menu("Help") {
                     Item(
-                        text = "rRepoDocs",
-                        enabled = false,
-                        onClick = {},
+                        text = "About rRepoDocs",
+                        onClick = { DesktopMenuBridge.onShowAbout?.invoke() },
                     )
                 }
             }

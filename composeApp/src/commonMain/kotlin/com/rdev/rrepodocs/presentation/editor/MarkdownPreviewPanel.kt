@@ -2,6 +2,7 @@ package com.rdev.rrepodocs.presentation.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ import com.rdev.rrepodocs.presentation.app.AppThemeTokens
 fun MarkdownPreviewPanel(
     markdown: String,
     showTitle: Boolean = true,
+    onNavigateToSource: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val renderer = remember { RenderMarkdownPreviewUseCase() }
@@ -98,7 +100,12 @@ fun MarkdownPreviewPanel(
                         verticalArrangement = Arrangement.spacedBy(22.dp),
                     ) {
                         itemsIndexed(blocks) { _, block ->
-                            MarkdownPreviewBlockView(block = block)
+                            MarkdownPreviewBlockView(
+                                block = block,
+                                onClick = block.sourceOffsetOrNull()?.let { sourceOffset ->
+                                    onNavigateToSource?.let { { it(sourceOffset) } }
+                                },
+                            )
                         }
                     }
                 } else if (markdown.isNotBlank()) {
@@ -116,7 +123,9 @@ fun MarkdownPreviewPanel(
 @Composable
 private fun MarkdownPreviewBlockView(
     block: MarkdownPreviewBlock,
+    onClick: (() -> Unit)? = null,
 ) {
+    val clickableModifier = onClick?.let { Modifier.clickable(onClick = it) } ?: Modifier
     when (block) {
         is MarkdownPreviewBlock.Heading -> {
             val textStyle = when (block.level) {
@@ -127,7 +136,10 @@ private fun MarkdownPreviewBlockView(
                 5 -> MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold, lineHeight = 28.sp)
                 else -> MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold, lineHeight = 28.sp)
             }
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = clickableModifier,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 MarkdownLinkText(
                     text = block.text,
                     style = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
@@ -152,12 +164,13 @@ private fun MarkdownPreviewBlockView(
                     lineHeight = 29.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
+                modifier = clickableModifier,
             )
         }
 
         is MarkdownPreviewBlock.UnorderedList -> {
             Column(
-                modifier = Modifier.padding(start = 4.dp),
+                modifier = clickableModifier.padding(start = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 block.items.forEach { item ->
@@ -183,7 +196,7 @@ private fun MarkdownPreviewBlockView(
 
         is MarkdownPreviewBlock.OrderedList -> {
             Column(
-                modifier = Modifier.padding(start = 2.dp),
+                modifier = clickableModifier.padding(start = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 block.items.forEachIndexed { index, item ->
@@ -208,7 +221,10 @@ private fun MarkdownPreviewBlockView(
         }
 
         is MarkdownPreviewBlock.CodeFence -> {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(
+                modifier = clickableModifier,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 if (!block.language.isNullOrBlank()) {
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f),
@@ -245,7 +261,10 @@ private fun MarkdownPreviewBlockView(
         }
 
         is MarkdownPreviewBlock.BlockQuote -> {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = clickableModifier,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Box(
                     modifier = Modifier
                         .width(4.dp)
@@ -266,7 +285,7 @@ private fun MarkdownPreviewBlockView(
         is MarkdownPreviewBlock.Table -> {
             val scrollState = rememberScrollState()
             Column(
-                modifier = Modifier
+                modifier = clickableModifier
                     .fillMaxWidth()
                     .horizontalScroll(scrollState)
                     .border(
@@ -297,6 +316,17 @@ private fun MarkdownPreviewBlockView(
             )
         }
     }
+}
+
+private fun MarkdownPreviewBlock.sourceOffsetOrNull(): Int? = when (this) {
+    is MarkdownPreviewBlock.Heading -> sourceOffset
+    is MarkdownPreviewBlock.Paragraph -> sourceOffset
+    is MarkdownPreviewBlock.UnorderedList -> sourceOffset
+    is MarkdownPreviewBlock.OrderedList -> sourceOffset
+    is MarkdownPreviewBlock.CodeFence -> sourceOffset
+    is MarkdownPreviewBlock.BlockQuote -> sourceOffset
+    is MarkdownPreviewBlock.Table -> sourceOffset
+    MarkdownPreviewBlock.HorizontalRule -> null
 }
 
 @Composable

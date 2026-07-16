@@ -1524,6 +1524,20 @@ class AppViewModel {
         )
     }
 
+    fun onPdfFileExported(path: String) {
+        uiState = uiState.copy(
+            saveError = null,
+            saveSuccess = "Downloaded ${path.substringAfterLast('/')}",
+        )
+    }
+
+    fun onPreviewPrintSubmitted() {
+        uiState = uiState.copy(
+            saveError = null,
+            saveSuccess = "Sent preview to printer.",
+        )
+    }
+
     fun onMarkdownFileExportFailed(message: String) {
         uiState = uiState.copy(
             saveError = message,

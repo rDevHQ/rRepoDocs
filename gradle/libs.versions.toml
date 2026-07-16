@@ -19,6 +19,7 @@ material3 = "1.10.0-alpha05"
 ktor = "3.2.3"
 kotlinx-serialization = "1.9.0"
 kamel = "0.9.5"
+pdfbox = "2.0.35"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -47,6 +48,7 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 kamel-image = { module = "media.kamel:kamel-image", version.ref = "kamel" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

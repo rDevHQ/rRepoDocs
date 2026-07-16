@@ -5,6 +5,12 @@ import com.rdev.rrepodocs.domain.model.MarkdownPreviewBlock
 class RenderMarkdownPreviewUseCase {
     operator fun invoke(markdown: String): List<MarkdownPreviewBlock> {
         val lines = markdown.replace("\r\n", "\n").split('\n')
+        val lineOffsets = buildList {
+            add(0)
+            markdown.forEachIndexed { index, character ->
+                if (character == '\n') add(index + 1)
+            }
+        }
         val blocks = mutableListOf<MarkdownPreviewBlock>()
         var index = 0
 
@@ -17,6 +23,7 @@ class RenderMarkdownPreviewUseCase {
             }
 
             if (trimmed.startsWith("```")) {
+                val blockStartIndex = index
                 val language = trimmed.removePrefix("```").trim().ifEmpty { null }
                 index++
                 val codeLines = mutableListOf<String>()
@@ -30,6 +37,7 @@ class RenderMarkdownPreviewUseCase {
                 blocks += MarkdownPreviewBlock.CodeFence(
                     language = language,
                     code = codeLines.joinToString("\n"),
+                    sourceOffset = lineOffsets[blockStartIndex],
                 )
                 continue
             }
@@ -39,6 +47,7 @@ class RenderMarkdownPreviewUseCase {
                 blocks += MarkdownPreviewBlock.Heading(
                     level = headingMatch.groupValues[1].length.coerceIn(1, 6),
                     text = headingMatch.groupValues[2].trim(),
+                    sourceOffset = lineOffsets[index],
                 )
                 index++
                 continue
@@ -51,6 +60,7 @@ class RenderMarkdownPreviewUseCase {
             }
 
             if (isTableHeader(lines, index)) {
+                val blockStartIndex = index
                 val header = parseTableCells(lines[index])
                 val rows = mutableListOf<List<String>>()
                 index += 2 // header + separator
@@ -58,44 +68,48 @@ class RenderMarkdownPreviewUseCase {
                     rows += parseTableCells(lines[index])
                     index++
                 }
-                blocks += MarkdownPreviewBlock.Table(headers = header, rows = rows)
+                blocks += MarkdownPreviewBlock.Table(headers = header, rows = rows, sourceOffset = lineOffsets[blockStartIndex])
                 continue
             }
 
             if (trimmed.startsWith(">")) {
+                val blockStartIndex = index
                 val quoteLines = mutableListOf<String>()
                 while (index < lines.size && lines[index].trim().startsWith(">")) {
                     quoteLines += lines[index].trim().removePrefix(">").trim()
                     index++
                 }
-                blocks += MarkdownPreviewBlock.BlockQuote(quoteLines.joinToString("\n"))
+                blocks += MarkdownPreviewBlock.BlockQuote(quoteLines.joinToString("\n"), sourceOffset = lineOffsets[blockStartIndex])
                 continue
             }
 
             val unorderedMatch = unorderedRegex.matchEntire(trimmed)
             if (unorderedMatch != null) {
+                val blockStartIndex = index
                 val items = mutableListOf<String>()
                 while (index < lines.size) {
                     val match = unorderedRegex.matchEntire(lines[index].trim()) ?: break
                     items += match.groupValues[1].trim()
                     index++
                 }
-                blocks += MarkdownPreviewBlock.UnorderedList(items)
+                blocks += MarkdownPreviewBlock.UnorderedList(items, sourceOffset = lineOffsets[blockStartIndex])
                 continue
             }
 
             val orderedMatch = orderedRegex.matchEntire(trimmed)
             if (orderedMatch != null) {
+                val blockStartIndex = index
                 val items = mutableListOf<String>()
                 while (index < lines.size) {
                     val match = orderedRegex.matchEntire(lines[index].trim()) ?: break
                     items += match.groupValues[1].trim()
                     index++
                 }
-                blocks += MarkdownPreviewBlock.OrderedList(items)
+                blocks += MarkdownPreviewBlock.OrderedList(items, sourceOffset = lineOffsets[blockStartIndex])
                 continue
             }
 
+            val blockStartIndex = index
             val paragraphBuilder = StringBuilder()
             var previousLineBreakHard = false
             while (index < lines.size) {
@@ -123,7 +137,7 @@ class RenderMarkdownPreviewUseCase {
                 previousLineBreakHard = currentLineHardBreak
                 index++
             }
-            blocks += MarkdownPreviewBlock.Paragraph(paragraphBuilder.toString())
+            blocks += MarkdownPreviewBlock.Paragraph(paragraphBuilder.toString(), sourceOffset = lineOffsets[blockStartIndex])
         }
 
         return blocks

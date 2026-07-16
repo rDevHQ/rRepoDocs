@@ -9,24 +9,44 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
+import androidx.compose.material.icons.automirrored.outlined.Redo
+import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.outlined.CloudUpload
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.FormatBold
+import androidx.compose.material.icons.outlined.FormatItalic
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,6 +77,7 @@ fun MarkdownEditorPanel(
     modifier: Modifier = Modifier,
     showChrome: Boolean = true,
     onEditorFocusChanged: (Boolean) -> Unit = {},
+    sourceNavigation: EditorSourceNavigation? = null,
     contentHorizontalPadding: Dp = 56.dp,
     contentVerticalPadding: Dp = 48.dp,
 ) {
@@ -68,6 +89,47 @@ fun MarkdownEditorPanel(
         else -> listOf(repoDisplayName) + activeDocumentPath.split('/').filter { it.isNotBlank() }
     }
     val editorScroll = rememberScrollState()
+    val editorFocusRequester = remember { FocusRequester() }
+    val editorState = remember(activeDocumentPath) { TextFieldState(content) }
+    val editHistory = remember(activeDocumentPath) { MarkdownEditHistory() }
+    val historyValue = remember(activeDocumentPath) { TextFieldValueMemory(editorState.asTextFieldValue()) }
+    val latestTextSelection = remember(activeDocumentPath) { TextSelectionMemory() }
+
+    LaunchedEffect(content) {
+        if (content != editorState.text.toString()) {
+            editorState.setTextAndPlaceCursorAtEnd(content)
+            editHistory.reset()
+            historyValue.value = editorState.asTextFieldValue()
+            latestTextSelection.value = null
+        }
+    }
+
+    LaunchedEffect(editorState) {
+        snapshotFlow { editorState.text.toString() }.collect(onContentChanged)
+    }
+
+    LaunchedEffect(editorState) {
+        snapshotFlow { editorState.selection }.collect { selection ->
+            latestTextSelection.value = selection.takeUnless { it.start == it.end }
+        }
+    }
+
+    LaunchedEffect(editorState) {
+        snapshotFlow { editorState.asTextFieldValue() }.collect { updatedValue ->
+            if (updatedValue.text != historyValue.value.text) {
+                editHistory.recordChange(historyValue.value, updatedValue)
+            }
+            historyValue.value = updatedValue
+        }
+    }
+
+    LaunchedEffect(sourceNavigation?.requestId) {
+        sourceNavigation ?: return@LaunchedEffect
+        editorState.edit {
+            selection = TextRange(sourceNavigation.offset.coerceIn(0, length))
+        }
+        editorFocusRequester.requestFocus()
+    }
 
     Surface(
         modifier = modifier,
@@ -225,10 +287,44 @@ fun MarkdownEditorPanel(
                 }
             }
 
+            MarkdownFormattingToolbar(
+                enabled = canEdit,
+                canUndo = editHistory.canUndo,
+                canRedo = editHistory.canRedo,
+                onUndo = {
+                    editHistory.undo(editorState.asTextFieldValue())?.let { previousValue ->
+                        historyValue.value = previousValue
+                        editorState.updateFrom(previousValue)
+                        latestTextSelection.value = null
+                        onContentChanged(previousValue.text)
+                        editorFocusRequester.requestFocus()
+                    }
+                },
+                onRedo = {
+                    editHistory.redo(editorState.asTextFieldValue())?.let { nextValue ->
+                        historyValue.value = nextValue
+                        editorState.updateFrom(nextValue)
+                        latestTextSelection.value = null
+                        onContentChanged(nextValue.text)
+                        editorFocusRequester.requestFocus()
+                    }
+                },
+                onFormat = { format ->
+                    val currentValue = editorState.asTextFieldValue()
+                    val valueToFormat = formattingValue(currentValue, latestTextSelection.value)
+                    val formattedValue = applyMarkdownFormat(valueToFormat, format)
+                    editHistory.recordChange(currentValue, formattedValue)
+                    historyValue.value = formattedValue
+                    editorState.updateFrom(formattedValue)
+                    latestTextSelection.value = null
+                    onContentChanged(formattedValue.text)
+                    editorFocusRequester.requestFocus()
+                },
+            )
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(editorScroll)
                     .padding(horizontal = contentHorizontalPadding, vertical = contentVerticalPadding),
             ) {
                 val textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -251,16 +347,127 @@ fun MarkdownEditorPanel(
                 }
 
                 BasicTextField(
-                    value = content,
-                    onValueChange = onContentChanged,
+                    state = editorState,
                     enabled = canEdit,
                     textStyle = textStyle,
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    scrollState = editorScroll,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { onEditorFocusChanged(it.isFocused) },
+                        .fillMaxSize()
+                        .focusRequester(editorFocusRequester)
+                        .onFocusChanged {
+                            onEditorFocusChanged(it.isFocused)
+                        },
                 )
             }
         }
+    }
+}
+
+data class EditorSourceNavigation(
+    val offset: Int,
+    val requestId: Long,
+)
+
+private fun TextFieldState.asTextFieldValue(): TextFieldValue = TextFieldValue(
+    text = text.toString(),
+    selection = selection,
+)
+
+private fun TextFieldState.updateFrom(value: TextFieldValue) {
+    edit {
+        replace(0, length, value.text)
+        selection = value.selection
+    }
+}
+
+private class TextFieldValueMemory(
+    var value: TextFieldValue,
+)
+
+private class TextSelectionMemory(
+    var value: TextRange? = null,
+)
+
+@Composable
+private fun MarkdownFormattingToolbar(
+    enabled: Boolean,
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    onFormat: (MarkdownFormat) -> Unit,
+) {
+    val toolbarScroll = rememberScrollState()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = AppThemeTokens.colors.editorSurface,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(toolbarScroll)
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MarkdownHistoryButton("Undo", enabled && canUndo, onUndo) {
+                Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = null)
+            }
+            MarkdownHistoryButton("Redo", enabled && canRedo, onRedo) {
+                Icon(Icons.AutoMirrored.Outlined.Redo, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.Heading, "Heading", enabled, onFormat) {
+                Icon(Icons.Outlined.Title, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.Bold, "Bold", enabled, onFormat) {
+                Icon(Icons.Outlined.FormatBold, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.Italic, "Italic", enabled, onFormat) {
+                Icon(Icons.Outlined.FormatItalic, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.BulletList, "Bullet list", enabled, onFormat) {
+                Icon(Icons.AutoMirrored.Outlined.FormatListBulleted, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.Link, "Link", enabled, onFormat) {
+                Icon(Icons.Outlined.Link, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.InlineCode, "Inline code", enabled, onFormat) {
+                Icon(Icons.Outlined.Code, contentDescription = null)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MarkdownHistoryButton(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+) {
+    IconButton(
+        modifier = Modifier.semantics { contentDescription = label },
+        enabled = enabled,
+        onClick = onClick,
+    ) {
+        icon()
+    }
+}
+
+@Composable
+private fun MarkdownFormatButton(
+    format: MarkdownFormat,
+    label: String,
+    enabled: Boolean,
+    onFormat: (MarkdownFormat) -> Unit,
+    icon: @Composable () -> Unit,
+) {
+    IconButton(
+        modifier = Modifier.semantics { contentDescription = label },
+        enabled = enabled,
+        onClick = { onFormat(format) },
+    ) {
+        icon()
     }
 }

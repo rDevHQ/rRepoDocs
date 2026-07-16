@@ -35,12 +35,11 @@ import com.rdev.rrepodocs.presentation.repo.RepoPickerScreen
 import com.rdev.rrepodocs.platform.provideGitHubOAuthClientId
 import com.rdev.rrepodocs.platform.provideSecureSessionStorage
 import com.rdev.rrepodocs.platform.provideWorkspacePreferencesStorage
+import com.rdev.rrepodocs.platform.exportPdfFile
 import com.rdev.rrepodocs.platform.exportMarkdownFile
+import com.rdev.rrepodocs.platform.printMarkdownPreview
 import com.rdev.rrepodocs.platform.pickMarkdownFileForImport
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-private const val AUTO_SYNC_INTERVAL_MILLIS = 60_000L
 
 @Composable
 fun AppRoot() {
@@ -75,6 +74,7 @@ fun AppRoot() {
     val appViewModel = remember { AppViewModel() }
     val coroutineScope = rememberCoroutineScope()
     var restoredRepositoryForSession by remember { mutableStateOf<String?>(null) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val restoredSession = authViewModel.restoreSession()
@@ -133,13 +133,77 @@ fun AppRoot() {
                 )
             }
         }
+        DesktopMenuBridge.onExportPdf = {
+            coroutineScope.launch {
+                val snapshot = appViewModel.exportMarkdownSnapshot() ?: return@launch
+                runCatching {
+                    exportPdfFile(
+                        defaultFileName = snapshot.fileName,
+                        title = snapshot.fileName.substringBeforeLast('.'),
+                        content = snapshot.content,
+                    )
+                }.fold(
+                    onSuccess = { exportedPath ->
+                        if (exportedPath != null) {
+                            appViewModel.onPdfFileExported(exportedPath)
+                        }
+                    },
+                    onFailure = { error ->
+                        appViewModel.onMarkdownFileExportFailed(
+                            userFacingErrorMessage(
+                                error = error,
+                                fallback = "Unable to download the PDF.",
+                            )
+                        )
+                    },
+                )
+            }
+        }
+        DesktopMenuBridge.onPrintPreview = {
+            coroutineScope.launch {
+                val snapshot = appViewModel.exportMarkdownSnapshot() ?: return@launch
+                runCatching {
+                    printMarkdownPreview(
+                        title = snapshot.fileName.substringBeforeLast('.'),
+                        content = snapshot.content,
+                    )
+                }.onSuccess { submitted ->
+                    if (submitted) {
+                        appViewModel.onPreviewPrintSubmitted()
+                    }
+                }.onFailure { error ->
+                    appViewModel.onMarkdownFileExportFailed(
+                        userFacingErrorMessage(
+                            error = error,
+                            fallback = "Unable to print the preview.",
+                        )
+                    )
+                }
+            }
+        }
+        DesktopMenuBridge.onShareDocument = { appViewModel.requestShowShareDialog() }
+        DesktopMenuBridge.onShowSharedLinks = { appViewModel.requestShowSharedLinksDialog() }
+        DesktopMenuBridge.onSwitchRepository = { appViewModel.openRepositoryPicker() }
+        DesktopMenuBridge.onSignOut = {
+            workspacePreferencesStorage.clearLastRepositoryFullName()
+            authViewModel.signOut()
+            appViewModel.signOut()
+        }
         DesktopMenuBridge.onToggleShowNonMarkdownFiles = { appViewModel.toggleShowNonMarkdownFiles() }
+        DesktopMenuBridge.onShowAbout = { showAboutDialog = true }
         onDispose {
             DesktopMenuBridge.onCopyFile = null
             DesktopMenuBridge.onPasteFile = null
             DesktopMenuBridge.onImportFile = null
             DesktopMenuBridge.onExportFile = null
+            DesktopMenuBridge.onExportPdf = null
+            DesktopMenuBridge.onPrintPreview = null
+            DesktopMenuBridge.onShareDocument = null
+            DesktopMenuBridge.onShowSharedLinks = null
+            DesktopMenuBridge.onSwitchRepository = null
+            DesktopMenuBridge.onSignOut = null
             DesktopMenuBridge.onToggleShowNonMarkdownFiles = null
+            DesktopMenuBridge.onShowAbout = null
         }
     }
 
@@ -155,6 +219,7 @@ fun AppRoot() {
         appState.renameInProgress,
         appState.moveInProgress,
         appState.pasteInProgress,
+        appState.session,
     ) {
         DesktopMenuBridge.inWorkspace = appState.mode == AppMode.Workspace
         DesktopMenuBridge.canCopyFile = appState.mode == AppMode.Workspace &&
@@ -172,6 +237,13 @@ fun AppRoot() {
         DesktopMenuBridge.canExportFile = appState.mode == AppMode.Workspace &&
             appState.activeDocument != null &&
             !appState.documentLoading
+        DesktopMenuBridge.canExportPdf = DesktopMenuBridge.canExportFile
+        DesktopMenuBridge.canPrintPreview = DesktopMenuBridge.canExportFile
+        DesktopMenuBridge.canShareDocument = appState.mode == AppMode.Workspace &&
+            appState.activeDocument != null &&
+            !appState.documentLoading &&
+            !appState.shareInProgress
+        DesktopMenuBridge.isSignedIn = appState.session != null
         DesktopMenuBridge.showNonMarkdownFiles = appState.showNonMarkdownFiles
     }
 
@@ -798,25 +870,6 @@ fun AppRoot() {
         )
     }
 
-    LaunchedEffect(
-        appState.mode,
-        appState.session?.accessToken,
-        appState.selectedRepository?.fullName,
-    ) {
-        if (
-            appState.mode != AppMode.Workspace ||
-            appState.session == null ||
-            appState.selectedRepository == null
-        ) {
-            return@LaunchedEffect
-        }
-
-        while (true) {
-            delay(AUTO_SYNC_INTERVAL_MILLIS)
-            appViewModel.requestRepositorySync()
-        }
-    }
-
     LaunchedEffect(appState.selectedRepository?.fullName) {
         val selectedFullName = appState.selectedRepository?.fullName ?: return@LaunchedEffect
         workspacePreferencesStorage.saveLastRepositoryFullName(selectedFullName)
@@ -984,6 +1037,9 @@ fun AppRoot() {
                     },
                 )
             }
+        }
+        if (showAboutDialog) {
+            AboutDialog(onDismissRequest = { showAboutDialog = false })
         }
     }
 }
