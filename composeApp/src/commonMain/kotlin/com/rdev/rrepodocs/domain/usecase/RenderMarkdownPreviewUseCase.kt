@@ -99,13 +99,18 @@ class RenderMarkdownPreviewUseCase {
             val orderedMatch = orderedRegex.matchEntire(trimmed)
             if (orderedMatch != null) {
                 val blockStartIndex = index
+                val startNumber = orderedMatch.groupValues[1].toIntOrNull() ?: 1
                 val items = mutableListOf<String>()
                 while (index < lines.size) {
                     val match = orderedRegex.matchEntire(lines[index].trim()) ?: break
-                    items += match.groupValues[1].trim()
+                    items += match.groupValues[2].trim()
                     index++
                 }
-                blocks += MarkdownPreviewBlock.OrderedList(items, sourceOffset = lineOffsets[blockStartIndex])
+                blocks += MarkdownPreviewBlock.OrderedList(
+                    items = items,
+                    startNumber = startNumber,
+                    sourceOffset = lineOffsets[blockStartIndex],
+                )
                 continue
             }
 
@@ -174,7 +179,7 @@ class RenderMarkdownPreviewUseCase {
     private companion object {
         val headingRegex = Regex("""^(#{1,6})\s+(.+)$""")
         val unorderedRegex = Regex("""^[-*+]\s+(.+)$""")
-        val orderedRegex = Regex("""^\d+[.)]\s+(.+)$""")
+        val orderedRegex = Regex("""^(\d+)[.)]\s+(.+)$""")
         val horizontalRuleRegex = Regex("""^(\*{3,}|-{3,}|_{3,})$""")
         val tableSeparatorRegex = Regex("""^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$""")
     }

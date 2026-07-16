@@ -19,6 +19,7 @@ sealed interface MarkdownPreviewBlock {
 
     data class OrderedList(
         val items: List<String>,
+        val startNumber: Int = 1,
         val sourceOffset: Int = 0,
     ) : MarkdownPreviewBlock
 

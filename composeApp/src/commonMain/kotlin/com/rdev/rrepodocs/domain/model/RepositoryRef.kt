@@ -8,4 +8,7 @@ data class RepositoryRef(
     val ownerAvatarUrl: String?,
     val isPrivate: Boolean,
     val defaultBranch: String = "HEAD",
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val pushedAt: String? = null,
 )

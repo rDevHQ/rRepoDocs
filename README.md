@@ -61,7 +61,7 @@ Required GitHub scopes (MVP):
 OAuth app setup (for Device Flow):
 1. Create a GitHub OAuth App in your GitHub developer settings.
 2. Set `GitHubAuthConfig.defaultClientId` in [composeApp/src/commonMain/kotlin/com/rdev/rrepodocs/platform/GitHubAuthConfig.kt](/Users/robert.gustavsson/Documents/GitHub/RAG/rRepoDocs/composeApp/src/commonMain/kotlin/com/rdev/rrepodocs/platform/GitHubAuthConfig.kt).
-3. Click `Connect with GitHub`, authorize in browser, then click `I Authorized, Continue`.
+3. Click `Connect with GitHub`, then `Open GitHub Authorization`. Approve the request in GitHub; rRepoDocs detects the approval and continues automatically.
 
 Optional fallback:
 - You can still use `RREPODOCS_GITHUB_CLIENT_ID` if you prefer not to commit a client ID in code.

@@ -3,6 +3,7 @@ package com.rdev.rrepodocs.presentation.auth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
@@ -12,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.dp
 import com.rdev.rrepodocs.presentation.app.AppThemeTokens
 
 @Composable
@@ -47,7 +49,9 @@ fun AuthScreen(
             Button(
                 enabled = !isLoading,
                 onClick = onStartSignIn,
-                modifier = Modifier.padding(top = AppThemeTokens.spacing.xl),
+                modifier = Modifier
+                    .padding(top = AppThemeTokens.spacing.xl)
+                    .heightIn(min = 48.dp),
             ) {
                 Text(if (isLoading) "Preparing..." else "Connect with GitHub")
             }
@@ -68,21 +72,26 @@ fun AuthScreen(
                 }
             }
             Button(
-                enabled = verificationUri != null || verificationUriComplete != null,
+                enabled = !isLoading && (verificationUri != null || verificationUriComplete != null),
                 onClick = {
                     uriHandler.openUri(verificationUriComplete ?: verificationUri.orEmpty())
+                    onFinishSignIn()
                 },
-                modifier = Modifier.padding(top = AppThemeTokens.spacing.md),
+                modifier = Modifier
+                    .padding(top = AppThemeTokens.spacing.md)
+                    .heightIn(min = 48.dp),
             ) {
-                Text("Open GitHub Authorization")
+                Text(if (isLoading) "Waiting for GitHub..." else "Open GitHub Authorization")
             }
-            Button(
-                enabled = !isLoading,
-                onClick = onFinishSignIn,
-                modifier = Modifier.padding(top = AppThemeTokens.spacing.md),
-            ) {
-                Text(if (isLoading) "Checking..." else "I Authorized, Continue")
-            }
+            Text(
+                text = if (isLoading) {
+                    "Waiting for approval in GitHub. This finishes automatically."
+                } else {
+                    "After authorizing in GitHub, return here and the app will continue automatically."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = AppThemeTokens.spacing.sm),
+            )
         }
         if (errorMessage != null) {
             Text(
