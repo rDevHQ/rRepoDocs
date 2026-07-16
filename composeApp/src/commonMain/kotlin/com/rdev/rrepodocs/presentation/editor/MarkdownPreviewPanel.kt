@@ -4,10 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -55,18 +52,12 @@ fun MarkdownPreviewPanel(
 ) {
     val renderer = remember { RenderMarkdownPreviewUseCase() }
     val blocks = remember(markdown) { renderer(markdown) }
-    val previewScrollState = rememberLazyListState()
-    val targetBlockIndex = remember(blocks, markdown.length, sourceScrollProgress) {
-        sourceScrollProgress?.let { progress ->
-            val targetOffset = (markdown.length * progress).toInt()
-            blocks.indexOfLast { block ->
-                block.sourceOffsetOrNull()?.let { it <= targetOffset } == true
-            }.coerceAtLeast(0)
-        }
-    }
+    val previewScrollState = rememberScrollState()
 
-    LaunchedEffect(targetBlockIndex) {
-        targetBlockIndex?.let { previewScrollState.scrollToItem(it) }
+    LaunchedEffect(sourceScrollProgress, previewScrollState.maxValue) {
+        sourceScrollProgress?.let { progress ->
+            previewScrollState.scrollTo((previewScrollState.maxValue * progress).toInt())
+        }
     }
 
     Surface(
@@ -85,7 +76,9 @@ fun MarkdownPreviewPanel(
                 modifier = Modifier
                     .fillMaxSize()
                     .align(Alignment.TopCenter)
-                    .widthIn(max = 760.dp),
+                    .widthIn(max = 760.dp)
+                    .verticalScroll(previewScrollState)
+                    .padding(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
                 if (showTitle) {
@@ -111,19 +104,13 @@ fun MarkdownPreviewPanel(
                     }
                 }
                 if (blocks.isNotEmpty()) {
-                    LazyColumn(
-                        state = previewScrollState,
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(22.dp),
-                    ) {
-                        itemsIndexed(blocks) { _, block ->
-                            MarkdownPreviewBlockView(
-                                block = block,
-                                onClick = block.sourceOffsetOrNull()?.let { sourceOffset ->
-                                    onNavigateToSource?.let { { it(sourceOffset) } }
-                                },
-                            )
-                        }
+                    blocks.forEach { block ->
+                        MarkdownPreviewBlockView(
+                            block = block,
+                            onClick = block.sourceOffsetOrNull()?.let { sourceOffset ->
+                                onNavigateToSource?.let { { it(sourceOffset) } }
+                            },
+                        )
                     }
                 } else if (markdown.isNotBlank()) {
                     Text(

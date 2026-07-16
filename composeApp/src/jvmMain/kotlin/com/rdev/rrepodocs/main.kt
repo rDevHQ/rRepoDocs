@@ -127,12 +127,17 @@ fun main() {
                 }
                 Menu("Account") {
                     Item(
-                        text = "Log Out",
+                        text = "Open GitHub Profile",
+                        enabled = DesktopMenuBridge.githubProfileUrl != null,
+                        onClick = { DesktopMenuBridge.onOpenGitHubProfile?.invoke() },
+                    )
+                    Separator()
+                    Item(
+                        text = "Switch GitHub Account...",
                         enabled = DesktopMenuBridge.isSignedIn,
                         onClick = { DesktopMenuBridge.onSignOut?.invoke() },
                     )
                 }
-                Menu("Window") {}
                 Menu("Help") {
                     Item(
                         text = "About rRepoDocs",

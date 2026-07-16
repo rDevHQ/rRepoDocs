@@ -39,6 +39,7 @@ import com.rdev.rrepodocs.platform.exportPdfFile
 import com.rdev.rrepodocs.platform.exportMarkdownFile
 import com.rdev.rrepodocs.platform.printMarkdownPreview
 import com.rdev.rrepodocs.platform.pickMarkdownFileForImport
+import com.rdev.rrepodocs.platform.openExternalUrl
 import kotlinx.coroutines.launch
 
 @Composable
@@ -184,6 +185,9 @@ fun AppRoot() {
         DesktopMenuBridge.onShareDocument = { appViewModel.requestShowShareDialog() }
         DesktopMenuBridge.onShowSharedLinks = { appViewModel.requestShowSharedLinksDialog() }
         DesktopMenuBridge.onSwitchRepository = { appViewModel.openRepositoryPicker() }
+        DesktopMenuBridge.onOpenGitHubProfile = {
+            DesktopMenuBridge.githubProfileUrl?.let(::openExternalUrl)
+        }
         DesktopMenuBridge.onSignOut = {
             workspacePreferencesStorage.clearLastRepositoryFullName()
             authViewModel.signOut()
@@ -201,6 +205,7 @@ fun AppRoot() {
             DesktopMenuBridge.onShareDocument = null
             DesktopMenuBridge.onShowSharedLinks = null
             DesktopMenuBridge.onSwitchRepository = null
+            DesktopMenuBridge.onOpenGitHubProfile = null
             DesktopMenuBridge.onSignOut = null
             DesktopMenuBridge.onToggleShowNonMarkdownFiles = null
             DesktopMenuBridge.onShowAbout = null
@@ -244,6 +249,9 @@ fun AppRoot() {
             !appState.documentLoading &&
             !appState.shareInProgress
         DesktopMenuBridge.isSignedIn = appState.session != null
+        DesktopMenuBridge.githubProfileUrl = appState.session?.username
+            ?.takeIf { it.isNotBlank() }
+            ?.let { "https://github.com/$it" }
         DesktopMenuBridge.showNonMarkdownFiles = appState.showNonMarkdownFiles
     }
 

@@ -13,6 +13,7 @@ object DesktopMenuBridge {
     var canPrintPreview by mutableStateOf(false)
     var canShareDocument by mutableStateOf(false)
     var isSignedIn by mutableStateOf(false)
+    var githubProfileUrl by mutableStateOf<String?>(null)
     var showNonMarkdownFiles by mutableStateOf(false)
     var inWorkspace by mutableStateOf(false)
 
@@ -25,6 +26,7 @@ object DesktopMenuBridge {
     var onShareDocument: (() -> Unit)? = null
     var onShowSharedLinks: (() -> Unit)? = null
     var onSwitchRepository: (() -> Unit)? = null
+    var onOpenGitHubProfile: (() -> Unit)? = null
     var onSignOut: (() -> Unit)? = null
     var onToggleShowNonMarkdownFiles: (() -> Unit)? = null
     var onShowAbout: (() -> Unit)? = null
