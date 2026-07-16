@@ -48,6 +48,7 @@ fun RepoPickerScreen(
     isLoading: Boolean,
     errorMessage: String?,
     onRepositorySelected: (RepositoryRef) -> Unit,
+    onOpenLocalFolder: () -> Unit,
     onRetry: () -> Unit,
     onSignOut: () -> Unit,
 ) {
@@ -93,6 +94,9 @@ fun RepoPickerScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    TextButton(onClick = onOpenLocalFolder) {
+                        Text("Open local folder")
+                    }
                 }
                 TextButton(onClick = onSignOut) {
                     Text("Sign out")

@@ -12,6 +12,7 @@ import com.rdev.rrepodocs.data.auth.GitHubDeviceFlowService
 import com.rdev.rrepodocs.data.auth.GitHubTokenAuthRepository
 import com.rdev.rrepodocs.data.github.GitHubApiClient
 import com.rdev.rrepodocs.data.repository.GitHubRepositoryServiceImpl
+import com.rdev.rrepodocs.data.repository.provideLocalFolderRepositoryService
 import com.rdev.rrepodocs.data.share.ShareWorkerService
 import com.rdev.rrepodocs.domain.model.AuthState
 import com.rdev.rrepodocs.domain.model.DocumentPath
@@ -40,6 +41,7 @@ import com.rdev.rrepodocs.platform.exportMarkdownFile
 import com.rdev.rrepodocs.platform.printMarkdownPreview
 import com.rdev.rrepodocs.platform.pickMarkdownFileForImport
 import com.rdev.rrepodocs.platform.openExternalUrl
+import com.rdev.rrepodocs.platform.pickLocalMarkdownFolder
 import kotlinx.coroutines.launch
 
 @Composable
@@ -50,7 +52,8 @@ fun AppRoot() {
     val gitHubApiClient = remember { GitHubApiClient() }
     val gitHubDeviceFlowService = remember { GitHubDeviceFlowService() }
     val authRepository = remember { GitHubTokenAuthRepository(sessionStorage, gitHubApiClient) }
-    val gitHubRepositoryService = remember { GitHubRepositoryServiceImpl(gitHubApiClient) }
+    val localFolderRepositoryService = remember { provideLocalFolderRepositoryService() }
+    val gitHubRepositoryService = remember { GitHubRepositoryServiceImpl(gitHubApiClient, localFolderRepositoryService) }
     val shareService = remember { ShareWorkerService() }
     val loadRepositoriesUseCase = remember { LoadRepositoriesUseCase(gitHubRepositoryService) }
     val loadRepoTreeUseCase = remember { LoadRepoTreeUseCase(gitHubRepositoryService) }
@@ -185,6 +188,11 @@ fun AppRoot() {
         DesktopMenuBridge.onShareDocument = { appViewModel.requestShowShareDialog() }
         DesktopMenuBridge.onShowSharedLinks = { appViewModel.requestShowSharedLinksDialog() }
         DesktopMenuBridge.onSwitchRepository = { appViewModel.openRepositoryPicker() }
+        DesktopMenuBridge.onOpenLocalFolder = {
+            coroutineScope.launch {
+                pickLocalMarkdownFolder()?.let(appViewModel::selectRepository)
+            }
+        }
         DesktopMenuBridge.onSwitchAccount = { userId ->
             authViewModel.switchAccount(userId)?.let(appViewModel::onSignedIn)
         }
@@ -213,6 +221,7 @@ fun AppRoot() {
             DesktopMenuBridge.onShareDocument = null
             DesktopMenuBridge.onShowSharedLinks = null
             DesktopMenuBridge.onSwitchRepository = null
+            DesktopMenuBridge.onOpenLocalFolder = null
             DesktopMenuBridge.onSwitchAccount = null
             DesktopMenuBridge.onAddAccount = null
             DesktopMenuBridge.onOpenGitHubProfile = null
@@ -929,6 +938,9 @@ fun AppRoot() {
                     isLoading = appState.repositoriesLoading,
                     errorMessage = appState.repositoriesError,
                     onRepositorySelected = appViewModel::selectRepository,
+                    onOpenLocalFolder = {
+                        DesktopMenuBridge.onOpenLocalFolder?.invoke()
+                    },
                     onRetry = appViewModel::retryRepositoryLoad,
                     onSignOut = {
                         authViewModel.loadAccounts().forEach { account ->

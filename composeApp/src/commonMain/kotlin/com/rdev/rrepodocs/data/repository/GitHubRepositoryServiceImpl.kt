@@ -8,6 +8,7 @@ import com.rdev.rrepodocs.domain.model.MarkdownDocument
 import com.rdev.rrepodocs.domain.model.RepoTreeNode
 import com.rdev.rrepodocs.domain.model.RepoTreeNodeKind
 import com.rdev.rrepodocs.domain.model.RepositoryRef
+import com.rdev.rrepodocs.domain.model.RepositorySource
 import com.rdev.rrepodocs.domain.model.UserSession
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -23,6 +24,7 @@ import kotlinx.serialization.json.put
 
 class GitHubRepositoryServiceImpl(
     private val gitHubApiClient: GitHubApiClient,
+    private val localFolderRepositoryService: LocalFolderRepositoryService,
 ) : GitHubRepositoryService {
     private val mockMarkdownContentOverrides = mutableMapOf<String, String>()
     private val mockRemovedPaths = mutableSetOf<String>()
@@ -43,6 +45,9 @@ class GitHubRepositoryServiceImpl(
         session: UserSession,
         repository: RepositoryRef,
     ): Result<List<RepoTreeNode>> {
+        if (repository.source == RepositorySource.LocalFolder) {
+            return localFolderRepositoryService.loadTree(repository)
+        }
         if (session.accessToken.startsWith("mock-")) {
             return Result.success(mockTree())
         }
@@ -69,6 +74,9 @@ class GitHubRepositoryServiceImpl(
         repository: RepositoryRef,
         path: DocumentPath,
     ): Result<MarkdownDocument> {
+        if (repository.source == RepositorySource.LocalFolder) {
+            return localFolderRepositoryService.loadDocument(repository, path)
+        }
         if (session.accessToken.startsWith("mock-")) {
             val content = mockMarkdownContentOverrides[path.value] ?: mockDocumentContent(path.value)
             return Result.success(
@@ -101,6 +109,9 @@ class GitHubRepositoryServiceImpl(
         repository: RepositoryRef,
         path: DocumentPath,
     ): Result<List<DocumentHistoryEntry>> {
+        if (repository.source == RepositorySource.LocalFolder) {
+            return localFolderRepositoryService.loadHistory(repository, path)
+        }
         if (session.accessToken.startsWith("mock-")) {
             return Result.success(mockDocumentHistory(path.value))
         }
@@ -123,6 +134,9 @@ class GitHubRepositoryServiceImpl(
         updatedContent: String,
         commitMessage: String,
     ): Result<MarkdownDocument> {
+        if (repository.source == RepositorySource.LocalFolder) {
+            return localFolderRepositoryService.saveDocument(repository, document, updatedContent)
+        }
         val normalizedContent = updatedContent.replace("\r\n", "\n")
         if (session.accessToken.startsWith("mock-")) {
             mockMarkdownContentOverrides[document.path.value] = normalizedContent
@@ -167,6 +181,9 @@ class GitHubRepositoryServiceImpl(
         initialContent: String,
         commitMessage: String,
     ): Result<MarkdownDocument> {
+        if (repository.source == RepositorySource.LocalFolder) {
+            return localFolderRepositoryService.createDocument(repository, path, initialContent)
+        }
         val normalizedContent = initialContent.replace("\r\n", "\n")
         if (session.accessToken.startsWith("mock-")) {
             mockRemovedPaths -= path.value
@@ -209,6 +226,9 @@ class GitHubRepositoryServiceImpl(
         folderPath: String,
         commitMessage: String,
     ): Result<Unit> {
+        if (repository.source == RepositorySource.LocalFolder) {
+            return localFolderRepositoryService.createFolder(repository, folderPath)
+        }
         val normalizedFolder = folderPath.trim().trim('/')
         if (normalizedFolder.isBlank()) {
             return Result.failure(GitHubApiException("Folder name is required."))
@@ -244,6 +264,9 @@ class GitHubRepositoryServiceImpl(
         paths: List<String>,
         commitMessage: String,
     ): Result<Unit> {
+        if (repository.source == RepositorySource.LocalFolder) {
+            return localFolderRepositoryService.deleteItems(repository, paths)
+        }
         val normalizedPaths = paths
             .map { it.trim().trim('/') }
             .filter { it.isNotBlank() }
@@ -302,6 +325,9 @@ class GitHubRepositoryServiceImpl(
         newPath: DocumentPath,
         commitMessage: String,
     ): Result<MarkdownDocument> {
+        if (repository.source == RepositorySource.LocalFolder) {
+            return localFolderRepositoryService.moveDocument(repository, document, newPath)
+        }
         if (document.path.value == newPath.value) {
             return Result.failure(
                 GitHubApiException("Rename target matches current path.")

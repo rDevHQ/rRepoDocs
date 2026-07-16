@@ -2,6 +2,8 @@
 
 rRepoDocs is a minimal GitHub-first Markdown editor built with Kotlin Multiplatform for Android, iOS, and Desktop.
 
+Desktop also supports opening a local folder of Markdown files. Choose **Open local folder** from the repository picker; edits, creates, moves, and deletes are written directly to that folder. The folder is never uploaded or committed by rRepoDocs. Local-folder support for Android and iOS is planned separately.
+
 MVP focus:
 - authenticate with GitHub
 - select one repository

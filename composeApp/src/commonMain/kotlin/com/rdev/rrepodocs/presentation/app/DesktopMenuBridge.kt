@@ -29,6 +29,7 @@ object DesktopMenuBridge {
     var onShareDocument: (() -> Unit)? = null
     var onShowSharedLinks: (() -> Unit)? = null
     var onSwitchRepository: (() -> Unit)? = null
+    var onOpenLocalFolder: (() -> Unit)? = null
     var onSwitchAccount: ((String) -> Unit)? = null
     var onAddAccount: (() -> Unit)? = null
     var onOpenGitHubProfile: (() -> Unit)? = null

@@ -73,6 +73,11 @@ fun main() {
                         enabled = DesktopMenuBridge.inWorkspace,
                         onClick = { DesktopMenuBridge.onSwitchRepository?.invoke() },
                     )
+                    Item(
+                        text = "Open Local Directory...",
+                        enabled = DesktopMenuBridge.isSignedIn,
+                        onClick = { DesktopMenuBridge.onOpenLocalFolder?.invoke() },
+                    )
                     Separator()
                     Item(
                         text = "Share Public Preview...",
