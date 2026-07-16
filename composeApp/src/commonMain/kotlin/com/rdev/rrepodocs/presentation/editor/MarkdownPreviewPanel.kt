@@ -206,7 +206,7 @@ private fun MarkdownPreviewBlockView(
                 block.items.forEachIndexed { index, item ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = "${index + 1}.",
+                            text = "${block.startNumber + index}.",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -399,7 +399,7 @@ private fun MarkdownLinkText(
     )
 }
 
-private fun buildMarkdownAnnotatedString(
+internal fun buildMarkdownAnnotatedString(
     text: String,
     linkColor: Color,
     inlineCodeBackground: Color,
@@ -440,6 +440,20 @@ private fun buildMarkdownAnnotatedString(
                     style = SpanStyle(
                         fontFamily = FontFamily.Monospace,
                         background = inlineCodeBackground,
+                    ),
+                    start = start,
+                    end = length,
+                )
+            }
+
+            token.startsWith("***") || token.startsWith("___") -> {
+                val boldItalic = token.drop(3).dropLast(3)
+                val start = length
+                append(boldItalic)
+                addStyle(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.SemiBold,
+                        fontStyle = FontStyle.Italic,
                     ),
                     start = start,
                     end = length,
@@ -490,5 +504,5 @@ private fun buildMarkdownAnnotatedString(
 
 private val linkRegex = Regex("""\[([^\]]+)]\((https?://[^)]+)\)""")
 private val markdownInlineRegex = Regex(
-    """(\[[^\]]+]\(https?://[^)]+\)|`[^`]+`|\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|\*[^*\n]+\*|_[^_\n]+_)""",
+    """(\[[^\]]+]\(https?://[^)]+\)|`[^`]+`|\*\*\*[^*\n]+\*\*\*|___[^_\n]+___|\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|\*[^*\n]+\*|_[^_\n]+_)""",
 )

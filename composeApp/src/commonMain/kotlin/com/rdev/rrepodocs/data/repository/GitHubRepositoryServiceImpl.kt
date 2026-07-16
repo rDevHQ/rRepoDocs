@@ -733,6 +733,9 @@ class GitHubRepositoryServiceImpl(
             ownerAvatarUrl = ownerAvatarUrl,
             isPrivate = privateRepo,
             defaultBranch = defaultBranch,
+            createdAt = obj.string("created_at"),
+            updatedAt = obj.string("updated_at"),
+            pushedAt = obj.string("pushed_at"),
         )
     }
 
@@ -746,6 +749,9 @@ class GitHubRepositoryServiceImpl(
                 ownerAvatarUrl = "https://github.com/demo-user.png",
                 isPrivate = true,
                 defaultBranch = "main",
+                createdAt = "2025-01-10T09:00:00Z",
+                updatedAt = "2026-07-15T12:30:00Z",
+                pushedAt = "2026-07-15T12:30:00Z",
             ),
             RepositoryRef(
                 id = 2,
@@ -755,6 +761,9 @@ class GitHubRepositoryServiceImpl(
                 ownerAvatarUrl = "https://github.com/demo-user.png",
                 isPrivate = true,
                 defaultBranch = "main",
+                createdAt = "2023-09-02T10:15:00Z",
+                updatedAt = "2026-07-12T09:45:00Z",
+                pushedAt = "2026-07-12T09:45:00Z",
             ),
             RepositoryRef(
                 id = 3,
@@ -764,6 +773,9 @@ class GitHubRepositoryServiceImpl(
                 ownerAvatarUrl = "https://github.com/demo-user.png",
                 isPrivate = false,
                 defaultBranch = "main",
+                createdAt = "2024-04-17T08:00:00Z",
+                updatedAt = "2026-06-28T16:20:00Z",
+                pushedAt = "2026-06-28T16:20:00Z",
             ),
         )
     }
