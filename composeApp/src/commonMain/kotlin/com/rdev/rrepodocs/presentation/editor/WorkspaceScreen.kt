@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.outlined.Commit
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ContentPaste
@@ -112,9 +113,9 @@ fun WorkspaceScreen(
     treeLoading: Boolean,
     treeError: String?,
     onToggleFolder: (String) -> Unit,
-    onSelectExplorerPath: (String, Boolean) -> Unit,
     onCollapseFolders: () -> Unit,
     onExpandFolders: () -> Unit,
+    onSelectExplorerPath: (String, Boolean) -> Unit,
     onToggleShowNonMarkdownFiles: () -> Unit,
     onSelectMarkdownFile: (String) -> Unit,
     onRefreshTree: () -> Unit,
@@ -171,6 +172,7 @@ fun WorkspaceScreen(
     onEditorContentChanged: (String) -> Unit,
     onCommitMessageChanged: (String) -> Unit,
     onSaveDocument: () -> Unit,
+    onRevertDocumentChanges: () -> Unit,
     onStartCreateDocument: () -> Unit,
     onDismissCreateDocumentDialog: () -> Unit,
     onCreateTargetFolderChanged: (String) -> Unit,
@@ -237,10 +239,10 @@ fun WorkspaceScreen(
                 treeLoading = treeLoading,
                 treeError = treeError,
                 onToggleFolder = onToggleFolder,
-                onSelectExplorerPath = onSelectExplorerPath,
-                onToggleShowNonMarkdownFiles = onToggleShowNonMarkdownFiles,
                 onCollapseFolders = onCollapseFolders,
                 onExpandFolders = onExpandFolders,
+                onSelectExplorerPath = onSelectExplorerPath,
+                onToggleShowNonMarkdownFiles = onToggleShowNonMarkdownFiles,
                 onSelectMarkdownFile = onSelectMarkdownFile,
                 onRefreshTree = onRefreshTree,
                 activeDocumentPath = activeDocumentPath,
@@ -269,6 +271,7 @@ fun WorkspaceScreen(
                 onEditorContentChanged = onEditorContentChanged,
                 onCommitMessageChanged = onCommitMessageChanged,
                 onSaveDocument = onSaveDocument,
+                onRevertDocumentChanges = onRevertDocumentChanges,
                 onStartCreateDocument = onStartCreateDocument,
                 onStartCreateFolder = onStartCreateFolder,
                 onStartRenameDocument = onStartRenameDocument,
@@ -304,11 +307,11 @@ fun WorkspaceScreen(
                 treeLoading = treeLoading,
                 treeError = treeError,
                 onToggleFolder = onToggleFolder,
+                onCollapseFolders = onCollapseFolders,
+                onExpandFolders = onExpandFolders,
                 onSelectExplorerPath = onSelectExplorerPath,
                 onToggleShowNonMarkdownFiles = onToggleShowNonMarkdownFiles,
                 onSelectMarkdownFile = onSelectMarkdownFile,
-                onCollapseFolders = onCollapseFolders,
-                onExpandFolders = onExpandFolders,
                 onRefreshTree = onRefreshTree,
                 activeDocumentPath = activeDocumentPath,
                 documentHistoryEntries = documentHistoryEntries,
@@ -336,6 +339,7 @@ fun WorkspaceScreen(
                 onEditorContentChanged = onEditorContentChanged,
                 onCommitMessageChanged = onCommitMessageChanged,
                 onSaveDocument = onSaveDocument,
+                onRevertDocumentChanges = onRevertDocumentChanges,
                 onStartCreateDocument = onStartCreateDocument,
                 onStartCreateFolder = onStartCreateFolder,
                 onStartRenameDocument = onStartRenameDocument,
@@ -464,12 +468,12 @@ private fun DesktopWorkspaceLayout(
     treeLoading: Boolean,
     treeError: String?,
     onToggleFolder: (String) -> Unit,
+    onCollapseFolders: () -> Unit,
+    onExpandFolders: () -> Unit,
     onSelectExplorerPath: (String, Boolean) -> Unit,
     onToggleShowNonMarkdownFiles: () -> Unit,
     onSelectMarkdownFile: (String) -> Unit,
     onRefreshTree: () -> Unit,
-    onCollapseFolders: () -> Unit,
-    onExpandFolders: () -> Unit,
     activeDocumentPath: String?,
     documentHistoryEntries: List<DocumentHistoryEntry>,
     documentHistoryLoading: Boolean,
@@ -494,6 +498,7 @@ private fun DesktopWorkspaceLayout(
     onEditorContentChanged: (String) -> Unit,
     onCommitMessageChanged: (String) -> Unit,
     onSaveDocument: () -> Unit,
+    onRevertDocumentChanges: () -> Unit,
     onStartCreateDocument: () -> Unit,
     onStartCreateFolder: (String?) -> Unit,
     onStartRenameDocument: () -> Unit,
@@ -610,13 +615,13 @@ private fun DesktopWorkspaceLayout(
                 isLoading = treeLoading,
                 errorMessage = treeError,
                 onToggleFolder = onToggleFolder,
+                onCollapseFolders = onCollapseFolders,
+                onExpandFolders = onExpandFolders,
                 onSelectExplorerPath = onSelectExplorerPath,
                 onSelectMarkdownFile = onSelectMarkdownFile,
                 onStartCreateDocument = onStartCreateDocument,
                 onStartCreateFolder = onStartCreateFolder,
                 createInProgress = createInProgress,
-                onCollapseFolders = onCollapseFolders,
-                onExpandFolders = onExpandFolders,
                 createFolderInProgress = createFolderInProgress,
                 onStartRenameDocument = onStartRenameDocument,
                 renameInProgress = renameInProgress,
@@ -663,6 +668,7 @@ private fun DesktopWorkspaceLayout(
                 onContentChanged = onEditorContentChanged,
                 onCommitMessageChanged = onCommitMessageChanged,
                 onSaveDocument = onSaveDocument,
+                onRevertChanges = onRevertDocumentChanges,
                 onRetryOpenDocument = onRetryDocumentOpen,
                 onDiscardUnsavedAndOpenPending = onDiscardUnsavedAndOpenPending,
                 onKeepEditingCurrent = onKeepEditingCurrent,
@@ -800,6 +806,8 @@ private fun MobileWorkspaceLayout(
     treeLoading: Boolean,
     treeError: String?,
     onToggleFolder: (String) -> Unit,
+    onCollapseFolders: () -> Unit,
+    onExpandFolders: () -> Unit,
     onSelectExplorerPath: (String, Boolean) -> Unit,
     onToggleShowNonMarkdownFiles: () -> Unit,
     onSelectMarkdownFile: (String) -> Unit,
@@ -808,8 +816,6 @@ private fun MobileWorkspaceLayout(
     documentHistoryEntries: List<DocumentHistoryEntry>,
     documentHistoryLoading: Boolean,
     documentHistoryError: String?,
-    onCollapseFolders: () -> Unit,
-    onExpandFolders: () -> Unit,
     editorContent: String,
     documentIsDirty: Boolean,
     documentLoading: Boolean,
@@ -830,6 +836,7 @@ private fun MobileWorkspaceLayout(
     onEditorContentChanged: (String) -> Unit,
     onCommitMessageChanged: (String) -> Unit,
     onSaveDocument: () -> Unit,
+    onRevertDocumentChanges: () -> Unit,
     onStartCreateDocument: () -> Unit,
     onStartCreateFolder: (String?) -> Unit,
     onStartRenameDocument: () -> Unit,
@@ -885,7 +892,9 @@ private fun MobileWorkspaceLayout(
             showCommitAction = activeTab == MobileWorkspaceTab.Editor,
             showDoneAction = activeTab == MobileWorkspaceTab.Editor && editorHasFocus,
             canSave = canSave,
+            canRevert = canSave,
             onSaveDocument = onSaveDocument,
+            onRevertDocumentChanges = onRevertDocumentChanges,
             onDoneEditing = { focusManager.clearFocus(force = true) },
             showNonMarkdownFiles = showNonMarkdownFiles,
             canShareDocument = activeDocumentPath != null && !documentLoading && !shareInProgress,
@@ -927,6 +936,8 @@ private fun MobileWorkspaceLayout(
                         isLoading = treeLoading,
                         errorMessage = treeError,
                         onToggleFolder = onToggleFolder,
+                        onCollapseFolders = onCollapseFolders,
+                        onExpandFolders = onExpandFolders,
                         onSelectExplorerPath = onSelectExplorerPath,
                         onSelectMarkdownFile = { path ->
                             onSelectMarkdownFile(path)
@@ -938,8 +949,6 @@ private fun MobileWorkspaceLayout(
                         createFolderInProgress = createFolderInProgress,
                         onStartRenameDocument = onStartRenameDocument,
                         renameInProgress = renameInProgress,
-                        onCollapseFolders = onCollapseFolders,
-                        onExpandFolders = onExpandFolders,
                         onStartMoveDocument = onStartMoveDocument,
                         moveInProgress = moveInProgress,
                         copiedMarkdownPath = copiedMarkdownPath,
@@ -971,6 +980,7 @@ private fun MobileWorkspaceLayout(
                         onContentChanged = onEditorContentChanged,
                         onCommitMessageChanged = onCommitMessageChanged,
                         onSaveDocument = onSaveDocument,
+                        onRevertChanges = onRevertDocumentChanges,
                         onRetryOpenDocument = onRetryDocumentOpen,
                         onDiscardUnsavedAndOpenPending = onDiscardUnsavedAndOpenPending,
                         onKeepEditingCurrent = onKeepEditingCurrent,
@@ -1046,7 +1056,9 @@ private fun MobileBrandHeader(
     showCommitAction: Boolean,
     showDoneAction: Boolean,
     canSave: Boolean,
+    canRevert: Boolean,
     onSaveDocument: () -> Unit,
+    onRevertDocumentChanges: () -> Unit,
     onDoneEditing: () -> Unit,
     showNonMarkdownFiles: Boolean,
     canShareDocument: Boolean,
@@ -1133,6 +1145,21 @@ private fun MobileBrandHeader(
             }
 
             if (showCommitAction) {
+                IconButton(
+                    enabled = canRevert,
+                    onClick = onRevertDocumentChanges,
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Undo,
+                        contentDescription = "Revert changes",
+                        tint = if (canRevert) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
                 IconButton(
                     enabled = canSave,
                     onClick = onSaveDocument,
@@ -1591,7 +1618,7 @@ private fun RightContextPane(
                         onRetry = onRetryHistory,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 22.dp, vertical = 18.dp),
+                        .padding(horizontal = 22.dp, vertical = 18.dp),
                     )
                 }
 

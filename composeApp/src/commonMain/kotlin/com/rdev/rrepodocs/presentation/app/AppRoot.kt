@@ -991,6 +991,7 @@ fun AppRoot() {
                     onEditorContentChanged = appViewModel::updateDocumentContent,
                     onCommitMessageChanged = appViewModel::updateCommitMessageDraft,
                     onSaveDocument = appViewModel::requestSaveDocument,
+                    onRevertDocumentChanges = appViewModel::revertDocumentChanges,
                     onStartCreateDocument = appViewModel::requestShowCreateDocumentDialog,
                     onDismissCreateDocumentDialog = appViewModel::dismissCreateDocumentDialog,
                     onCreateTargetFolderChanged = appViewModel::updateCreateTargetFolderDraft,

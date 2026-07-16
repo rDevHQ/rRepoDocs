@@ -10,6 +10,7 @@ internal enum class MarkdownFormat {
     BulletList,
     Link,
     InlineCode,
+    HardLineBreak,
 }
 
 internal fun applyMarkdownFormat(
@@ -22,6 +23,7 @@ internal fun applyMarkdownFormat(
     MarkdownFormat.Italic -> wrapSelection(value, "*", "*", "italic text")
     MarkdownFormat.InlineCode -> wrapSelection(value, "`", "`", "code")
     MarkdownFormat.Link -> wrapSelection(value, "[", "](url)", "link text")
+    MarkdownFormat.HardLineBreak -> replaceSelection(value, "  \n")
 }
 
 internal fun formattingValue(
@@ -46,6 +48,20 @@ private fun wrapSelection(
     return value.copy(
         text = newText,
         selection = TextRange(editableRangeStart, editableRangeStart + selectedText.length),
+    )
+}
+
+private fun replaceSelection(
+    value: TextFieldValue,
+    replacement: String,
+): TextFieldValue {
+    val selection = normalizedSelection(value.selection)
+    val newText = value.text.replaceRange(selection.start, selection.end, replacement)
+    val cursor = selection.start + replacement.length
+
+    return value.copy(
+        text = newText,
+        selection = TextRange(cursor),
     )
 }
 

@@ -71,6 +71,7 @@ fun MarkdownEditorPanel(
     onContentChanged: (String) -> Unit,
     onCommitMessageChanged: (String) -> Unit,
     onSaveDocument: () -> Unit,
+    onRevertChanges: () -> Unit,
     onRetryOpenDocument: () -> Unit,
     onDiscardUnsavedAndOpenPending: () -> Unit,
     onKeepEditingCurrent: () -> Unit,
@@ -214,6 +215,25 @@ fun MarkdownEditorPanel(
                                 },
                             )
                         }
+                    }
+
+                    Button(
+                        enabled = canSave,
+                        onClick = onRevertChanges,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(999.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.Undo,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 6.dp),
+                        )
+                        Text(text = "Revert Changes")
                     }
 
                     Button(
@@ -434,6 +454,9 @@ private fun MarkdownFormattingToolbar(
             }
             MarkdownFormatButton(MarkdownFormat.InlineCode, "Inline code", enabled, onFormat) {
                 Icon(Icons.Outlined.Code, contentDescription = null)
+            }
+            MarkdownFormatButton(MarkdownFormat.HardLineBreak, "Radbrytning", enabled, onFormat) {
+                Text("↵", style = MaterialTheme.typography.titleMedium)
             }
         }
     }

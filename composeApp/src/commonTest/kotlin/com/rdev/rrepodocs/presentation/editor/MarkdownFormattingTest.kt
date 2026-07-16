@@ -52,4 +52,15 @@ class MarkdownFormattingTest {
         assertEquals("**HEJ**", result.text)
         assertEquals(TextRange(2, 5), result.selection)
     }
+
+    @Test
+    fun insertsHardLineBreakAtCursor() {
+        val result = applyMarkdownFormat(
+            TextFieldValue("First lineSecond line", TextRange(10)),
+            MarkdownFormat.HardLineBreak,
+        )
+
+        assertEquals("First line  \nSecond line", result.text)
+        assertEquals(TextRange(13), result.selection)
+    }
 }

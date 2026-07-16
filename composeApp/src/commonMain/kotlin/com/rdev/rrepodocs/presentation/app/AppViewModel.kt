@@ -625,6 +625,23 @@ class AppViewModel {
         )
     }
 
+    fun revertDocumentChanges() {
+        if (uiState.saveInProgress || uiState.documentLoading) {
+            return
+        }
+        val editState = uiState.documentEditState ?: return
+        if (!editState.isDirty) {
+            return
+        }
+
+        uiState = uiState.copy(
+            documentEditState = editState.copy(currentContent = editState.originalContent),
+            commitMessageDraft = "",
+            saveError = null,
+            saveSuccess = null,
+        )
+    }
+
     fun beginDocumentSave() {
         uiState = uiState.copy(
             saveInProgress = true,
@@ -663,6 +680,11 @@ class AppViewModel {
         if (uiState.createInProgress || uiState.createFolderInProgress || uiState.renameInProgress || uiState.moveInProgress) {
             return
         }
+        val selectedExplorerFolder = uiState.selectedExplorerPaths
+            .singleOrNull()
+            ?.let { path -> findTreeNode(path, uiState.repoTreeRoots) }
+            ?.takeIf { node -> node.kind == RepoTreeNodeKind.Folder }
+            ?.path
         val selectedPath = uiState.selectedMarkdownPath ?: uiState.activeDocument?.path?.value
         val suggestedFolder = normalizeFolder(selectedExplorerFolder ?: selectedPath?.substringBeforeLast('/', ""))
         val defaultCommitMessage = defaultCreateCommitMessage(DEFAULT_NEW_FILE_NAME)
@@ -680,11 +702,6 @@ class AppViewModel {
 
     fun requestShowCreateFolderDialog(parentFolder: String? = null) {
         if (uiState.createInProgress || uiState.createFolderInProgress || uiState.renameInProgress || uiState.moveInProgress) {
-        val selectedExplorerFolder = uiState.selectedExplorerPaths
-            .singleOrNull()
-            ?.let { path -> findTreeNode(path, uiState.repoTreeRoots) }
-            ?.takeIf { node -> node.kind == RepoTreeNodeKind.Folder }
-            ?.path
             return
         }
 
